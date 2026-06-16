@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import type { UserRole } from '../../store/useStore';
-import { Settings, Shield, User, Bell, Database, Key, Check } from 'lucide-react';
+import { Settings, Shield, User, Bell, Check } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -54,20 +54,7 @@ export const Navbar: React.FC = () => {
         {/* Right Navigation Elements */}
         <div className="flex items-center gap-4">
           
-          {/* Database & Mode Indicators */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs">
-            <Database className="h-3.5 w-3.5 text-brand-cyan" />
-            <span className="text-brand-silver font-medium">Database:</span>
-            <span className="text-brand-success font-semibold">LocalStorage Sync</span>
-          </div>
 
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs">
-            <Key className="h-3.5 w-3.5 text-brand-indigo" />
-            <span className="text-brand-silver font-medium">AI Service:</span>
-            <span className={apiSettings.isSimulator ? "text-amber-500 font-semibold" : "text-brand-cyan font-semibold"}>
-              {apiSettings.isSimulator ? "Simulator Mode" : "Live Gemini"}
-            </span>
-          </div>
 
           {/* Role Switcher */}
           <div className="flex items-center gap-2">

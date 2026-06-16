@@ -77,6 +77,83 @@ export interface ParsedResume {
   summary: string;
 }
 
+export interface DeepResumeAnalysis {
+  // Core Scores
+  overallScore: number;
+  atsScore: number;
+  technicalStrengthScore: number;
+  projectQualityScore: number;
+  recruiterReadinessScore: number;
+  // ATS Report
+  atsReport: {
+    keywordDensity: { keyword: string; count: number; status: 'good' | 'low' | 'missing' }[];
+    missingKeywords: string[];
+    sectionAnalysis: { section: string; found: boolean; quality: 'strong' | 'adequate' | 'weak' | 'missing' }[];
+    formattingIssues: string[];
+  };
+  // Categorized Skills
+  extractedSkills: {
+    programmingLanguages: string[];
+    aiMl: string[];
+    cloud: string[];
+    databases: string[];
+    tools: string[];
+    frameworks: string[];
+    softSkills: string[];
+  };
+  // Strengths & Weaknesses
+  strengths: string[];
+  weaknesses: string[];
+  // Improvement Suggestions
+  improvements: {
+    category: string;
+    before: string;
+    after: string;
+    reason: string;
+  }[];
+  // Role Matching
+  roleMatch: {
+    matchPercentage: number;
+    missingSkills: string[];
+    recommendedSkills: string[];
+    hiringReadiness: 'Ready' | 'Almost Ready' | 'Needs Work' | 'Significant Gaps';
+  };
+  // Portfolio Evaluation
+  portfolioEvaluation: {
+    project: string;
+    innovationScore: number;
+    technicalDepth: number;
+    industryRelevance: number;
+    recruiterAppeal: number;
+    recommendation: string;
+  }[];
+  // Recruiter View
+  recruiterView: {
+    shortlistProbability: number;
+    interviewProbability: number;
+    strengthAreas: string[];
+    riskAreas: string[];
+    overallVerdict: string;
+  };
+  // Learning Path
+  learningPath: {
+    skill: string;
+    courses: string[];
+    certifications: string[];
+    projects: string[];
+  }[];
+  // Resume Rewrites
+  rewriteSuggestions: {
+    summaryRewrite: string;
+    experienceRewrites: { original: string; rewritten: string }[];
+    achievementStatements: string[];
+  };
+  // Parsed Data
+  parsedData: ParsedResume;
+  experienceAnalysis: string;
+  projectAnalysis: string;
+}
+
 export interface UserProfile {
   name: string;
   email: string;
@@ -93,6 +170,8 @@ export interface UserProfile {
   confidenceScore?: number;
   communicationScore?: number;
   parsedResume?: ParsedResume;
+  resumeAnalysis?: DeepResumeAnalysis;
+  resumeRawText?: string;
 }
 
 export interface Notification {
@@ -142,6 +221,8 @@ interface StoreState {
   updateTrackedJobStage: (trackedJobId: string, stage: JobPipelineStage) => void;
   removeTrackedJob: (trackedJobId: string) => void;
   getTrackedJobsByStage: (stage: JobPipelineStage) => TrackedJob[];
+  // Resume analysis
+  setResumeAnalysis: (analysis: DeepResumeAnalysis) => void;
   // Notification actions
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
   markNotificationRead: (id: string) => void;
@@ -324,9 +405,9 @@ const defaultCourses: LearningCourse[] = [
 ];
 
 const defaultProfile: UserProfile = {
-  name: 'Alex Mercer',
-  email: 'alex.mercer@devmail.com',
-  title: 'Full Stack Software Engineer',
+  name: 'Poovarasan',
+  email: 'poovarasan@devmail.com',
+  title: 'AI/ML Developer',
   skills: ['Python', 'SQL', 'TypeScript', 'React', 'Node.js', 'Git'],
   targetRole: 'AI Engineer',
   resumeUploaded: false
@@ -523,6 +604,14 @@ export const useStore = create<StoreState>((set, get) => {
 
     getTrackedJobsByStage: (stage) => {
       return get().trackedJobs.filter(tj => tj.stage === stage);
+    },
+
+    // ── Resume Analysis ──────────────────────────────────────────
+    setResumeAnalysis: (analysis) => {
+      const updatedProfile = { ...get().userProfile, resumeAnalysis: analysis };
+      set({ userProfile: updatedProfile });
+      setLocalStorage('ai_talent_profile', updatedProfile);
+      get().addActivityLog('Deep resume analysis completed and persisted.');
     },
 
     // ── Notifications ───────────────────────────────────────────

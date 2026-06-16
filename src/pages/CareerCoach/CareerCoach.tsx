@@ -3,12 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { getGeminiClient } from '../../services/geminiService';
 import { GlassCard } from '../../components/GlassCard/GlassCard';
-import { Brain, Send, Trash2, ArrowUpRight } from 'lucide-react';
+import { Brain, Send, Trash2, ArrowUpRight, Target, Zap, FileText, User } from 'lucide-react';
 
 export const CareerCoach: React.FC = () => {
   const { userProfile, coachMessages, addCoachMessage, clearCoachHistory, apiSettings } = useStore();
   const [userInput, setUserInput] = useState('');
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [activeRoadmap, setActiveRoadmap] = useState<any[] | null>(null);
   
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -18,10 +19,26 @@ export const CareerCoach: React.FC = () => {
   }, [coachMessages]);
 
   const presetPrompts = [
-    { label: "Generate 6-Month Study Roadmap", text: "Please generate a customized study roadmap for transitioning to my target role." },
-    { label: "Suggest Portfolio Projects", text: "What portfolio projects should I build to demonstrate capabilities in AI?" },
-    { label: "Certifications suggestions", text: "Which certifications are most valuable for machine learning engineering?" }
+    { label: "🎯 Career Readiness Assessment", text: "Assess my career readiness for my target role. Give me scores and actionable next steps." },
+    { label: "🗺️ Personalized 6-Month Roadmap", text: "Generate a detailed 6-month career roadmap customized to my current skills and target role." },
+    { label: "💼 Portfolio Project Ideas", text: "Suggest high-impact portfolio projects I should build to stand out for my target role." },
+    { label: "🎤 Mock Interview Prep", text: "Help me prepare for interviews. What should I expect and how should I practice?" },
+    { label: "💰 Salary & Market Analysis", text: "What's the salary range and market demand for my target role? Share current hiring trends." },
+    { label: "📄 Resume Improvement Tips", text: "Review my resume data and suggest specific improvements for my target role." },
   ];
+
+  // Build resume context from store
+  const buildResumeContext = () => {
+    const pr = userProfile.parsedResume;
+    const ra = userProfile.resumeAnalysis;
+    if (!pr && !ra) return undefined;
+    return {
+      summary: pr?.summary || ra?.parsedData?.summary || '',
+      skills: pr?.skills || ra?.parsedData?.skills || userProfile.skills,
+      experience: pr?.experience?.map(e => `${e.title} at ${e.company} (${e.duration})`).join('; ') || '',
+      certifications: pr?.certifications || ra?.parsedData?.certifications || [],
+    };
+  };
 
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || loading) return;
@@ -35,11 +52,17 @@ export const CareerCoach: React.FC = () => {
     try {
       const gemini = getGeminiClient(apiSettings.geminiKey, apiSettings.isSimulator);
       
-      // We pass the conversation context
+      // We pass the conversation context including the new message
       const history = [...coachMessages, { id: 'temp', sender: 'user' as const, text: textToSend, timestamp: '' }]
         .map(m => ({ sender: m.sender, text: m.text }));
 
-      const res = await gemini.chatCareerCoach(history, userProfile.skills, userProfile.targetRole);
+      const res = await gemini.chatCareerCoach(
+        history,
+        userProfile.skills,
+        userProfile.targetRole,
+        buildResumeContext(),
+        { name: userProfile.name, title: userProfile.title }
+      );
       
       addCoachMessage({ sender: 'ai', text: res.answer });
       
@@ -54,6 +77,9 @@ export const CareerCoach: React.FC = () => {
     }
   };
 
+  const hasResume = !!userProfile.parsedResume || !!userProfile.resumeAnalysis;
+  const skillCount = userProfile.skills.length;
+
   return (
     <div className="h-full overflow-y-auto p-6 grid-bg relative flex flex-col justify-between">
       <div className="glow-orb-indigo bottom-1/4 right-1/4 animate-pulse-slow"></div>
@@ -66,15 +92,37 @@ export const CareerCoach: React.FC = () => {
           <div>
             <h1 className="text-2xl font-extrabold font-display text-white">AI Career Coach</h1>
             <p className="text-brand-silver text-xs mt-0.5">
-              Obtain tailored portfolio construction suggestions and study roadmaps.
+              Personalized career mentoring powered by AI — context-aware, resume-integrated, and non-repetitive.
             </p>
           </div>
           <button
-            onClick={clearCoachHistory}
+            onClick={() => { clearCoachHistory(); setActiveRoadmap(null); }}
             className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-brand-error/10 hover:text-brand-error transition text-brand-silver"
           >
             <Trash2 className="h-4 w-4" />
           </button>
+        </div>
+
+        {/* Context Info Bar */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-indigo/10 border border-brand-indigo/20 text-[10px] font-bold text-brand-cyan">
+            <Target className="h-3 w-3" />
+            {userProfile.targetRole || 'No target set'}
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-semibold text-brand-silver">
+            <Zap className="h-3 w-3" />
+            {skillCount} skill{skillCount !== 1 ? 's' : ''} detected
+          </div>
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-semibold ${
+            hasResume ? 'bg-brand-success/10 border-brand-success/20 text-brand-success' : 'bg-white/5 border-white/10 text-brand-silver'
+          }`}>
+            <FileText className="h-3 w-3" />
+            {hasResume ? 'Resume loaded' : 'No resume'}
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-semibold text-brand-silver">
+            <User className="h-3 w-3" />
+            {userProfile.name || 'User'}
+          </div>
         </div>
 
         {/* Chat log & Roadmap splits */}
@@ -83,6 +131,14 @@ export const CareerCoach: React.FC = () => {
           {/* Chat Messages */}
           <div className="lg:col-span-3 flex flex-col justify-between glass-panel p-4 bg-brand-dark/25 relative overflow-hidden">
             <div className="flex-1 overflow-y-auto space-y-4 pr-1 max-h-[420px] scroll-smooth">
+              {coachMessages.length === 0 && (
+                <div className="flex items-center justify-center h-full text-center">
+                  <div className="space-y-3">
+                    <Brain className="h-12 w-12 text-brand-indigo/30 mx-auto" />
+                    <p className="text-xs text-brand-silver/60">Start a conversation or pick a suggestion from the right panel.</p>
+                  </div>
+                </div>
+              )}
               {coachMessages.map((msg) => {
                 const isAi = msg.sender === 'ai';
                 return (
@@ -126,7 +182,7 @@ export const CareerCoach: React.FC = () => {
             <div className="mt-4 pt-3 border-t border-brand-border/40 flex items-center gap-2">
               <input
                 type="text"
-                placeholder="Ask your career query..."
+                placeholder="Ask anything about your career..."
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(userInput)}
@@ -154,7 +210,8 @@ export const CareerCoach: React.FC = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  {activeRoadmap.map((item, idx) => (
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {activeRoadmap.map((item: any, idx: number) => (
                     <div key={idx} className="border-l-2 border-brand-indigo pl-3 py-1 space-y-2 relative">
                       <div className="absolute -left-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-cyan"></div>
                       <h4 className="text-xs font-bold text-white">{item.timeframe}</h4>
@@ -163,6 +220,7 @@ export const CareerCoach: React.FC = () => {
                         <div className="text-[10px] text-brand-silver">
                           <strong>Skills:</strong> {item.skillsToLearn.join(', ')}
                         </div>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {item.projectsToBuild.map((p: any, pIdx: number) => (
                           <div key={pIdx} className="bg-white/5 p-2 rounded border border-white/5 text-[9px]">
                             <div className="font-bold text-brand-cyan flex items-center justify-between">
