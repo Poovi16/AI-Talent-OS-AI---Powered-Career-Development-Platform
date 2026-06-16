@@ -407,7 +407,7 @@ const defaultCourses: LearningCourse[] = [
 const defaultProfile: UserProfile = {
   name: 'Poovarasan',
   email: 'poovarasan@devmail.com',
-  title: 'AI/ML Developer',
+  title: 'AI/ML Software Developer',
   skills: ['Python', 'SQL', 'TypeScript', 'React', 'Node.js', 'Git'],
   targetRole: 'AI Engineer',
   resumeUploaded: false
