@@ -1,5 +1,7 @@
 // e:/AI Talent OS/src/services/geminiService.ts
 
+import type { ParsedResume } from '../store/useStore';
+
 interface GeminiAnalysisResult {
   score: number;
   atsScore: number;
@@ -43,6 +45,13 @@ interface GeminiRoadmapItem {
 interface GeminiCareerCoachResponse {
   answer: string;
   roadmap?: GeminiRoadmapItem[];
+}
+
+export interface CareerInsight {
+  inDemandSkills: { skill: string; demandLevel: 'High' | 'Medium' | 'Low'; growthTrend: string }[];
+  salaryRange: { low: string; mid: string; high: string; currency: string };
+  hiringTrends: string[];
+  recommendations: string[];
 }
 
 export const getGeminiClient = (apiKey: string, isSimulator: boolean) => {
@@ -140,7 +149,56 @@ export const getGeminiClient = (apiKey: string, isSimulator: boolean) => {
       return JSON.parse(responseText);
     },
 
-    // 2. Job Matching
+    // 2. Extract Resume Data (structured parsing)
+    extractResumeData: async (fileContentText: string): Promise<ParsedResume> => {
+      if (isSim) {
+        await new Promise((r) => setTimeout(r, 1800));
+        return {
+          skills: ['Python', 'TypeScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS'],
+          experience: [
+            { title: 'Software Engineer II', company: 'TechCorp Inc.', duration: '2023 – Present' },
+            { title: 'Junior Developer', company: 'StartupLab', duration: '2021 – 2023' },
+          ],
+          education: [
+            { degree: 'B.S. Computer Science', institution: 'UC Berkeley', year: '2021' },
+          ],
+          certifications: ['AWS Cloud Practitioner', 'Google TensorFlow Developer Certificate'],
+          projects: [
+            {
+              title: 'AI-Powered Code Review Bot',
+              description: 'Built an automated code review tool leveraging LLM APIs to provide intelligent suggestions on pull requests.',
+              techStack: ['Python', 'FastAPI', 'OpenAI API', 'Docker'],
+            },
+            {
+              title: 'Real-Time Analytics Dashboard',
+              description: 'Designed a React + D3.js dashboard visualizing live metrics from distributed microservices.',
+              techStack: ['React', 'TypeScript', 'D3.js', 'WebSocket'],
+            },
+          ],
+          summary: 'Full-stack software engineer with 4+ years of experience building scalable web applications and AI-powered tools. Proficient in Python, TypeScript, and cloud infrastructure.',
+        };
+      }
+
+      const prompt = `
+        You are an AI Resume Parser. Extract structured data from the resume text below.
+        Provide a JSON response matching this interface:
+        {
+          "skills": string[],
+          "experience": [{ "title": string, "company": string, "duration": string }],
+          "education": [{ "degree": string, "institution": string, "year": string }],
+          "certifications": string[],
+          "projects": [{ "title": string, "description": string, "techStack": string[] }],
+          "summary": string
+        }
+        
+        Resume text:
+        ${fileContentText}
+      `;
+      const responseText = await runGemini(prompt);
+      return JSON.parse(responseText);
+    },
+
+    // 3. Job Matching
     matchJob: async (userSkills: string[], jobDescription: string): Promise<GeminiJobMatchResult> => {
       if (isSim) {
         await new Promise((r) => setTimeout(r, 1500));
@@ -185,7 +243,56 @@ export const getGeminiClient = (apiKey: string, isSimulator: boolean) => {
       return JSON.parse(responseText);
     },
 
-    // 3. Interview Assistant Questions
+    // 4. Career Insights
+    getCareerInsights: async (targetRole: string, userSkills: string[]): Promise<CareerInsight> => {
+      if (isSim) {
+        await new Promise((r) => setTimeout(r, 2000));
+
+        const insightsMap: Record<string, CareerInsight> = {
+          'AI Engineer': {
+            inDemandSkills: [
+              { skill: 'PyTorch / JAX', demandLevel: 'High', growthTrend: '+42% YoY' },
+              { skill: 'LangChain / LlamaIndex', demandLevel: 'High', growthTrend: '+85% YoY' },
+              { skill: 'Kubernetes', demandLevel: 'Medium', growthTrend: '+18% YoY' },
+              { skill: 'Rust (for ML infra)', demandLevel: 'Medium', growthTrend: '+30% YoY' },
+              { skill: 'Vector Databases', demandLevel: 'High', growthTrend: '+120% YoY' },
+            ],
+            salaryRange: { low: '$145,000', mid: '$195,000', high: '$310,000', currency: 'USD' },
+            hiringTrends: [
+              'Companies are prioritizing candidates with production LLM deployment experience.',
+              'RAG (Retrieval-Augmented Generation) expertise has become a top-3 requirement.',
+              'Remote AI roles have increased 35% since 2025, with Bay Area compensation leading.',
+              'Startups are offering 15-25% equity premiums for senior AI engineering hires.',
+            ],
+            recommendations: [
+              'Build a portfolio project demonstrating end-to-end RAG pipeline deployment.',
+              'Obtain AWS ML Specialty or GCP Professional ML Engineer certification.',
+              'Contribute to open-source LLM frameworks (vLLM, LangChain, Transformers).',
+              'Practice system design interviews focused on ML serving architectures.',
+            ],
+          },
+        };
+
+        return insightsMap[targetRole] || insightsMap['AI Engineer'];
+      }
+
+      const prompt = `
+        You are an AI Career Market Analyst. Provide current market insights for the role: "${targetRole}".
+        The candidate currently has these skills: ${JSON.stringify(userSkills)}.
+        
+        Provide a structured response in JSON matching this interface:
+        {
+          "inDemandSkills": [{ "skill": string, "demandLevel": "High" | "Medium" | "Low", "growthTrend": string }],
+          "salaryRange": { "low": string, "mid": string, "high": string, "currency": string },
+          "hiringTrends": string[],
+          "recommendations": string[]
+        }
+      `;
+      const responseText = await runGemini(prompt);
+      return JSON.parse(responseText);
+    },
+
+    // 5. Interview Assistant Questions
     generateQuestions: async (role: string): Promise<GeminiInterviewQuestion[]> => {
       if (isSim) {
         await new Promise((r) => setTimeout(r, 1000));
@@ -231,7 +338,7 @@ export const getGeminiClient = (apiKey: string, isSimulator: boolean) => {
       return JSON.parse(responseText);
     },
 
-    // 4. Mock Interview Answer Feedback
+    // 6. Mock Interview Answer Feedback
     evaluateAnswer: async (question: string, userAnswer: string): Promise<GeminiInterviewFeedback> => {
       if (isSim) {
         await new Promise((r) => setTimeout(r, 2000));
@@ -277,7 +384,7 @@ export const getGeminiClient = (apiKey: string, isSimulator: boolean) => {
       return JSON.parse(responseText);
     },
 
-    // 5. Career Coach Chat
+    // 7. Career Coach Chat
     chatCareerCoach: async (messages: { sender: string; text: string }[], currentSkills: string[], targetRole: string): Promise<GeminiCareerCoachResponse> => {
       if (isSim) {
         await new Promise((r) => setTimeout(r, 2000));

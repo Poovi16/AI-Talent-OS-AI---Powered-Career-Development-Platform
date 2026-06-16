@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 export type UserRole = 'candidate' | 'recruiter' | 'admin';
 
+export type JobPipelineStage = 'discovered' | 'saved' | 'applied' | 'screening' | 'interview' | 'offer' | 'rejected';
+
 export interface Candidate {
   id: string;
   name: string;
@@ -32,6 +34,21 @@ export interface Job {
   suitabilityRating: 'High' | 'Medium' | 'Low';
 }
 
+export interface TrackedJob {
+  id: string;
+  jobId: string;
+  title: string;
+  company: string;
+  location: string;
+  salary: string;
+  matchScore: number;
+  stage: JobPipelineStage;
+  applyUrl: string;
+  addedAt: string;
+  updatedAt: string;
+  notes?: string;
+}
+
 export interface LearningCourse {
   id: string;
   title: string;
@@ -51,6 +68,15 @@ export interface Message {
   timestamp: string;
 }
 
+export interface ParsedResume {
+  skills: string[];
+  experience: { title: string; company: string; duration: string }[];
+  education: { degree: string; institution: string; year: string }[];
+  certifications: string[];
+  projects: { title: string; description: string; techStack: string[] }[];
+  summary: string;
+}
+
 export interface UserProfile {
   name: string;
   email: string;
@@ -66,10 +92,20 @@ export interface UserProfile {
   technicalScore?: number;
   confidenceScore?: number;
   communicationScore?: number;
+  parsedResume?: ParsedResume;
+}
+
+export interface Notification {
+  id: string;
+  type: 'info' | 'success' | 'warning';
+  message: string;
+  timestamp: string;
+  read: boolean;
 }
 
 interface ApiSettings {
   geminiKey: string;
+  jsearchKey: string;
   isSimulator: boolean;
 }
 
@@ -80,9 +116,11 @@ interface StoreState {
   userProfile: UserProfile;
   candidates: Candidate[];
   jobs: Job[];
+  trackedJobs: TrackedJob[];
   learningCourses: LearningCourse[];
   coachMessages: Message[];
   activityLogs: string[];
+  notifications: Notification[];
   
   // Actions
   setActiveRole: (role: UserRole) => void;
@@ -99,6 +137,15 @@ interface StoreState {
   updateCourseProgress: (courseId: string, progress: number) => void;
   addActivityLog: (log: string) => void;
   resetStore: () => void;
+  // New tracked job actions
+  addTrackedJob: (job: Omit<TrackedJob, 'id' | 'addedAt' | 'updatedAt'>) => void;
+  updateTrackedJobStage: (trackedJobId: string, stage: JobPipelineStage) => void;
+  removeTrackedJob: (trackedJobId: string) => void;
+  getTrackedJobsByStage: (stage: JobPipelineStage) => TrackedJob[];
+  // Notification actions
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+  markNotificationRead: (id: string) => void;
+  clearNotifications: () => void;
 }
 
 const defaultCandidates: Candidate[] = [
@@ -178,9 +225,9 @@ const defaultJobs: Job[] = [
   {
     id: 'job-1',
     title: 'Lead AI Software Engineer',
-    company: 'Skynet Solutions',
-    location: 'Los Angeles, CA (Hybrid)',
-    salary: '$180,000 - $220,000',
+    company: 'Google DeepMind',
+    location: 'Mountain View, CA (Hybrid)',
+    salary: '$185,000 - $265,000',
     matchScore: 94,
     description: 'We are seeking a Lead AI Engineer to architect, build, and deploy large language models (LLMs) and computer vision algorithms. You will lead a small, high-performance team of developers.',
     status: 'none' as const,
@@ -191,9 +238,9 @@ const defaultJobs: Job[] = [
   {
     id: 'job-2',
     title: 'NLP Research Scientist',
-    company: 'Cyberdyne Systems',
-    location: 'Sunnyvale, CA (Onsite)',
-    salary: '$190,000 - $240,000',
+    company: 'OpenAI',
+    location: 'San Francisco, CA (Onsite)',
+    salary: '$250,000 - $370,000',
     matchScore: 82,
     description: 'Join our research group focusing on the limits of deep neural net transformer architectures. Build novel algorithms for sequence generation, alignment, and multi-modal integration.',
     status: 'saved' as const,
@@ -204,9 +251,9 @@ const defaultJobs: Job[] = [
   {
     id: 'job-3',
     title: 'Full Stack AI Product Engineer',
-    company: 'NeuralCorp',
+    company: 'Anthropic',
     location: 'Remote (US)',
-    salary: '$140,000 - $175,000',
+    salary: '$180,000 - $260,000',
     matchScore: 68,
     description: 'Create user interfaces that interact with powerful generative AI backend models. Work with React, TypeScript, Node.js, and Python API wrappers to build the future of workflow automation.',
     status: 'none' as const,
@@ -217,9 +264,9 @@ const defaultJobs: Job[] = [
   {
     id: 'job-4',
     title: 'Machine Learning DevOps Engineer',
-    company: 'FutureTech AI',
+    company: 'Amazon Web Services',
     location: 'Seattle, WA (Remote friendly)',
-    salary: '$160,000 - $195,000',
+    salary: '$155,000 - $230,000',
     matchScore: 75,
     description: 'Build CI/CD pipelines for training, validating, and serving machine learning models. Manage GPU clusters and model drift monitoring dashboards.',
     status: 'none' as const,
@@ -307,10 +354,11 @@ export const useStore = create<StoreState>((set, get) => {
   // Initialize state from local storage or defaults
   const activeRole = getLocalStorage<UserRole>('ai_talent_role', 'candidate');
   const activePage = getLocalStorage<string>('ai_talent_page', 'dashboard');
-  const apiSettings = getLocalStorage<ApiSettings>('ai_talent_api', { geminiKey: '', isSimulator: true });
+  const apiSettings = getLocalStorage<ApiSettings>('ai_talent_api', { geminiKey: '', jsearchKey: '', isSimulator: true });
   const userProfile = getLocalStorage<UserProfile>('ai_talent_profile', defaultProfile);
   const candidates = getLocalStorage<Candidate[]>('ai_talent_candidates', defaultCandidates);
   const jobs = getLocalStorage<Job[]>('ai_talent_jobs', defaultJobs);
+  const trackedJobs = getLocalStorage<TrackedJob[]>('ai_talent_tracked_jobs', []);
   const learningCourses = getLocalStorage<LearningCourse[]>('ai_talent_courses', defaultCourses);
   const coachMessages = getLocalStorage<Message[]>('ai_talent_coach_msgs', [
     {
@@ -325,6 +373,7 @@ export const useStore = create<StoreState>((set, get) => {
     'Default candidates & jobs database loaded.',
     'Mock API Simulator connected.'
   ]);
+  const notifications = getLocalStorage<Notification[]>('ai_talent_notifications', []);
 
   return {
     activeRole,
@@ -333,9 +382,11 @@ export const useStore = create<StoreState>((set, get) => {
     userProfile,
     candidates,
     jobs,
+    trackedJobs,
     learningCourses,
     coachMessages,
     activityLogs,
+    notifications,
 
     setActiveRole: (role) => {
       set({ activeRole: role });
@@ -433,6 +484,73 @@ export const useStore = create<StoreState>((set, get) => {
       }
     },
 
+    // ── Tracked Jobs (Pipeline/Kanban) ──────────────────────────
+    addTrackedJob: (job) => {
+      const now = new Date().toISOString();
+      const newTracked: TrackedJob = {
+        ...job,
+        id: `trk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        addedAt: now,
+        updatedAt: now,
+      };
+      const updated = [newTracked, ...get().trackedJobs];
+      set({ trackedJobs: updated });
+      setLocalStorage('ai_talent_tracked_jobs', updated);
+      get().addActivityLog(`Tracked job: ${job.title} at ${job.company} → ${job.stage.toUpperCase()}.`);
+    },
+
+    updateTrackedJobStage: (trackedJobId, stage) => {
+      const updated = get().trackedJobs.map(tj =>
+        tj.id === trackedJobId ? { ...tj, stage, updatedAt: new Date().toISOString() } : tj
+      );
+      set({ trackedJobs: updated });
+      setLocalStorage('ai_talent_tracked_jobs', updated);
+      const job = get().trackedJobs.find(tj => tj.id === trackedJobId);
+      if (job) {
+        get().addActivityLog(`Pipeline: ${job.title} moved to ${stage.toUpperCase()}.`);
+      }
+    },
+
+    removeTrackedJob: (trackedJobId) => {
+      const job = get().trackedJobs.find(tj => tj.id === trackedJobId);
+      const updated = get().trackedJobs.filter(tj => tj.id !== trackedJobId);
+      set({ trackedJobs: updated });
+      setLocalStorage('ai_talent_tracked_jobs', updated);
+      if (job) {
+        get().addActivityLog(`Removed ${job.title} from pipeline.`);
+      }
+    },
+
+    getTrackedJobsByStage: (stage) => {
+      return get().trackedJobs.filter(tj => tj.stage === stage);
+    },
+
+    // ── Notifications ───────────────────────────────────────────
+    addNotification: (notification) => {
+      const newNotif: Notification = {
+        ...notification,
+        id: `notif-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        read: false,
+      };
+      const updated = [newNotif, ...get().notifications].slice(0, 30);
+      set({ notifications: updated });
+      setLocalStorage('ai_talent_notifications', updated);
+    },
+
+    markNotificationRead: (id) => {
+      const updated = get().notifications.map(n =>
+        n.id === id ? { ...n, read: true } : n
+      );
+      set({ notifications: updated });
+      setLocalStorage('ai_talent_notifications', updated);
+    },
+
+    clearNotifications: () => {
+      set({ notifications: [] });
+      setLocalStorage('ai_talent_notifications', []);
+    },
+
     addCoachMessage: (msg) => {
       const newMsg: Message = {
         ...msg,
@@ -483,17 +601,20 @@ export const useStore = create<StoreState>((set, get) => {
       localStorage.removeItem('ai_talent_profile');
       localStorage.removeItem('ai_talent_candidates');
       localStorage.removeItem('ai_talent_jobs');
+      localStorage.removeItem('ai_talent_tracked_jobs');
       localStorage.removeItem('ai_talent_courses');
       localStorage.removeItem('ai_talent_coach_msgs');
       localStorage.removeItem('ai_talent_logs');
+      localStorage.removeItem('ai_talent_notifications');
       
       set({
         activeRole: 'candidate',
         activePage: 'dashboard',
-        apiSettings: { geminiKey: '', isSimulator: true },
+        apiSettings: { geminiKey: '', jsearchKey: '', isSimulator: true },
         userProfile: defaultProfile,
         candidates: defaultCandidates,
         jobs: defaultJobs,
+        trackedJobs: [],
         learningCourses: defaultCourses,
         coachMessages: [
           {
@@ -503,7 +624,8 @@ export const useStore = create<StoreState>((set, get) => {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         ],
-        activityLogs: ['System reset to defaults.']
+        activityLogs: ['System reset to defaults.'],
+        notifications: [],
       });
     }
   };
