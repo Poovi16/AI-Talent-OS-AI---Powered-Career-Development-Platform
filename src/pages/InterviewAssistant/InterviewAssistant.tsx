@@ -6,11 +6,12 @@ import { GlassCard } from '../../components/GlassCard/GlassCard';
 import {
   Video, Award, RefreshCw, Send, CheckCircle2, Search, ChevronDown,
   Target, TrendingUp, BarChart3, Zap, Shield, Star,
-  MessageSquare, Clock, User, Bot, ArrowRight
+  MessageSquare, Clock, User, Bot, ArrowRight, BookOpen, Eye, EyeOff,
+  Lightbulb, AlertTriangle, ListChecks
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════
-// CAREER LIBRARY — 50+ roles for interview simulation
+// CAREER LIBRARY — 46 roles for interview simulation
 // ═══════════════════════════════════════════════════════════════
 
 interface InterviewRole {
@@ -83,6 +84,173 @@ const domainList = [...new Set(interviewRoles.map(r => r.domain))];
 type InterviewType = typeof interviewTypes[number];
 type ExperienceLevel = typeof experienceLevels[number];
 
+// ═══════════════════════════════════════════════════════════════
+// IDEAL ANSWER ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+interface IdealAnswer {
+  answer: string;
+  keyPoints: string[];
+  commonMistakes: string[];
+  evaluationCriteria: string[];
+  starBreakdown?: { situation: string; task: string; action: string; result: string };
+}
+
+function generateIdealAnswer(question: string, role: string, level: ExperienceLevel): IdealAnswer {
+  const q = question.toLowerCase();
+  const isBehavioral = q.includes('describe a time') || q.includes('tell me about') || q.includes('give me an example') || q.includes('how do you handle');
+  const isFresher = level === 'Fresher' || level === 'Intern';
+  const isSenior = level === 'Senior' || level === 'Lead' || level === 'Manager';
+
+  // Dynamic answer generation based on question keywords
+  if (isBehavioral) {
+    return generateBehavioralAnswer(question, role, level);
+  }
+
+  // Technical / HR answers
+  const depth = isSenior ? 'deep' : isFresher ? 'foundational' : 'moderate';
+
+  return {
+    answer: generateTechnicalAnswer(question, role, depth),
+    keyPoints: generateKeyPoints(question, role),
+    commonMistakes: generateCommonMistakes(question, isFresher),
+    evaluationCriteria: [
+      'Technical accuracy and depth of explanation',
+      'Use of relevant terminology and concepts',
+      `Real-world examples from ${role} context`,
+      isSenior ? 'Strategic thinking and architecture decisions' : 'Clarity and logical structure',
+      'Mention of trade-offs and limitations'
+    ]
+  };
+}
+
+function generateBehavioralAnswer(question: string, role: string, level: ExperienceLevel): IdealAnswer {
+  const q = question.toLowerCase();
+  const isFresher = level === 'Fresher' || level === 'Intern';
+
+  let situation = '', task = '', action = '', result = '';
+
+  if (q.includes('challenge') || q.includes('difficult') || q.includes('conflict')) {
+    situation = isFresher
+      ? `During my final year capstone project as a ${role} student, our team faced a major disagreement on the technical approach.`
+      : `At my previous company, our ${role} team encountered a critical production issue during a high-traffic period that affected 50K+ users.`;
+    task = isFresher
+      ? 'I needed to find a way to align the team and deliver the project by the deadline.'
+      : 'I was responsible for diagnosing the root cause, coordinating the fix, and ensuring minimal customer impact.';
+    action = isFresher
+      ? 'I organized a structured brainstorming session, created a comparison matrix of approaches, and facilitated a vote. I also volunteered to prototype both options over a weekend.'
+      : 'I immediately set up a war room, triaged the issue using logs and monitoring dashboards, identified a database connection pool exhaustion, implemented a hotfix with connection pooling limits, and communicated status updates to stakeholders every 30 minutes.';
+    result = isFresher
+      ? 'The team aligned on the best approach, we delivered on time, and our project received the highest grade in the cohort.'
+      : 'We resolved the issue within 2 hours, implemented permanent fixes that reduced similar incidents by 90%, and I created a runbook that the team now uses as standard procedure.';
+  } else if (q.includes('optimiz') || q.includes('improv') || q.includes('performance')) {
+    situation = `While working as a ${role}, I noticed that a key system was performing significantly below expectations.`;
+    task = 'I was tasked with identifying the bottleneck and improving performance to meet SLA requirements.';
+    action = isFresher
+      ? 'I profiled the application, identified N+1 query patterns, implemented batch processing, and added caching for frequently accessed data.'
+      : 'I conducted a comprehensive performance audit, identified three bottlenecks (database queries, network latency, inefficient algorithms), implemented query optimization, added a caching layer with Redis, and refactored the critical path algorithm from O(n²) to O(n log n).';
+    result = isFresher
+      ? 'Response times improved by 45% and the system met all performance requirements.'
+      : 'System throughput increased by 300%, p99 latency dropped from 2.5s to 200ms, and infrastructure costs were reduced by 35% due to fewer required instances.';
+  } else if (q.includes('team') || q.includes('mentor') || q.includes('lead')) {
+    situation = `In my role as a ${role}, I was responsible for a cross-functional initiative involving multiple team members.`;
+    task = 'I needed to align diverse perspectives, maintain team morale, and deliver results on a tight timeline.';
+    action = 'I established clear communication channels, created a shared project tracker, held weekly standups, provided mentorship to junior members, and ensured each person understood their contribution to the bigger picture.';
+    result = 'The project was delivered 2 weeks ahead of schedule, team satisfaction scores improved by 25%, and two junior members were promoted within the next cycle based on their contributions.';
+  } else {
+    situation = `In my previous role as a ${role}, I encountered a significant professional situation that tested my skills.`;
+    task = 'I was responsible for delivering a positive outcome while managing competing priorities and stakeholder expectations.';
+    action = isFresher
+      ? 'I broke the problem down into manageable parts, sought guidance from senior colleagues, researched best practices, and implemented a systematic solution with regular check-ins.'
+      : 'I developed a structured approach: analyzed the situation data, identified root causes, consulted with cross-functional experts, implemented a phased solution, and established metrics to track progress.';
+    result = isFresher
+      ? 'The outcome exceeded expectations, I received positive feedback from my supervisor, and the approach I developed became a reference for future similar situations.'
+      : 'The initiative resulted in measurable improvements across key metrics, earned recognition from leadership, and established a new best practice that was adopted organization-wide.';
+  }
+
+  return {
+    answer: `**Situation:** ${situation}\n\n**Task:** ${task}\n\n**Action:** ${action}\n\n**Result:** ${result}`,
+    keyPoints: [
+      'Specific context with clear role description',
+      'Measurable outcomes and concrete results',
+      'Clear action steps showing personal contribution',
+      'Reflection on learnings and impact',
+      'STAR structure with logical flow'
+    ],
+    commonMistakes: [
+      'Being too vague — "I worked with a team" without specifics',
+      'Forgetting the Result — ending without measurable outcomes',
+      'Taking all the credit — not acknowledging team contributions',
+      'Using hypothetical "I would" instead of actual experiences',
+      'Rambling without structure'
+    ],
+    evaluationCriteria: [
+      'Complete STAR framework (Situation, Task, Action, Result)',
+      'Specificity — names, numbers, timelines',
+      'Personal contribution clearly articulated',
+      'Measurable outcomes with data points',
+      'Self-awareness and lessons learned'
+    ],
+    starBreakdown: { situation, task, action, result }
+  };
+}
+
+function generateTechnicalAnswer(question: string, role: string, depth: string): string {
+  const q = question.toLowerCase();
+
+  // Generate contextual answer based on question keywords
+  if (q.includes('difference between') || q.includes('vs') || q.includes('compare')) {
+    return `The key differences lie in their purpose, implementation, and trade-offs. [First concept] focuses on [primary characteristic], while [second concept] emphasizes [alternative approach]. In practice as a ${role}, I would choose the first approach when [use case 1] and the second when [use case 2]. The critical trade-off is between [factor A] and [factor B]. In my experience, understanding when to apply each approach based on project constraints — scalability, latency, cost, and team expertise — is more valuable than knowing the theoretical definitions alone.`;
+  }
+  if (q.includes('design') || q.includes('architect') || q.includes('build')) {
+    return depth === 'deep'
+      ? `I would approach this using a layered architecture: 1) **Requirements Analysis** — define functional and non-functional requirements, SLAs, and scale targets. 2) **High-Level Design** — choose between monolithic vs microservices based on team size and deployment needs. 3) **Data Layer** — select appropriate databases (SQL for ACID, NoSQL for scale). 4) **API Design** — RESTful with proper versioning, rate limiting, and authentication. 5) **Infrastructure** — containerized deployment with auto-scaling. 6) **Monitoring** — distributed tracing, alerting, and SLO dashboards. Each decision would be documented with trade-off analysis.`
+      : `I would start by understanding the requirements and constraints. Then design a clean architecture with separation of concerns, choose appropriate technologies, implement with best practices (testing, documentation), and plan for scalability. Key considerations include data modeling, API design, error handling, and monitoring.`;
+  }
+  if (q.includes('explain') || q.includes('what is')) {
+    return `[Concept] is fundamentally about [core definition]. It works by [mechanism]. The key components are: 1) [Component A] — handles [function]. 2) [Component B] — responsible for [function]. 3) [Component C] — manages [function]. In a ${role} context, this is important because [practical relevance]. Common implementations include [example 1] and [example 2]. The limitations to be aware of are [limitation], which can be mitigated by [solution].`;
+  }
+  if (q.includes('how do you') || q.includes('your approach')) {
+    return `My approach follows a systematic methodology: **First**, I assess the current state and identify gaps. **Second**, I research industry best practices and evaluate tools/frameworks. **Third**, I implement iteratively with continuous feedback. **Fourth**, I measure results against defined KPIs. As a ${role}, I've found that the most effective approach combines [technique A] with [technique B], while avoiding [common pitfall]. The key metric I track is [relevant KPI], which helps ensure continuous improvement.`;
+  }
+
+  return `As a ${role}, I would approach this by first understanding the core requirements and constraints. I would then apply [relevant methodology/framework], implement using [appropriate tools/technologies], and validate the results through [testing/measurement approach]. The critical success factors include [factor 1], [factor 2], and [factor 3]. In my experience, the most common challenge is [challenge], which I address by [solution].`;
+}
+
+function generateKeyPoints(question: string, role: string): string[] {
+  const q = question.toLowerCase();
+  const points: string[] = [];
+
+  points.push('Clear, structured definition or explanation');
+  if (q.includes('design') || q.includes('architect')) {
+    points.push('Scalability and performance considerations');
+    points.push('Technology choices with justification');
+    points.push('Trade-off analysis');
+  }
+  if (q.includes('explain') || q.includes('what is') || q.includes('difference')) {
+    points.push('Core concepts and principles');
+    points.push('Practical applications and examples');
+    points.push('Advantages and limitations');
+  }
+  points.push(`Real-world relevance to ${role} work`);
+  points.push('Industry best practices mentioned');
+  if (points.length < 4) points.push('Concrete examples from experience');
+
+  return points.slice(0, 5);
+}
+
+function generateCommonMistakes(_question: string, isFresher: boolean): string[] {
+  const mistakes = [
+    'Giving a textbook definition without practical context',
+    'Not mentioning trade-offs or limitations',
+    'Being too vague — missing specific tools, numbers, or examples',
+    'Confusing related but different concepts',
+    isFresher ? 'Saying "I don\'t have experience" instead of relating to academic projects' : 'Not demonstrating depth expected at this experience level'
+  ];
+  return mistakes;
+}
+
+
 // Chat message types
 interface ChatMessage {
   id: string;
@@ -92,6 +260,8 @@ interface ChatMessage {
   scores?: { technical: number; confidence: number; communication: number; problemSolving: number };
   feedback?: string;
   suggestedAnswer?: string;
+  idealAnswer?: IdealAnswer;
+  isQuestion?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -108,6 +278,7 @@ export const InterviewAssistant: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [domainFilter, setDomainFilter] = useState('All');
+  const [learningMode, setLearningMode] = useState(false);
 
   // Interview state
   const [interviewStarted, setInterviewStarted] = useState(false);
@@ -118,6 +289,7 @@ export const InterviewAssistant: React.FC = () => {
   const [maxQuestions] = useState(5);
   const [finished, setFinished] = useState(false);
   const [askedQuestions, setAskedQuestions] = useState<Set<string>>(new Set());
+  const [expandedAnswers, setExpandedAnswers] = useState<Set<string>>(new Set());
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -136,14 +308,23 @@ export const InterviewAssistant: React.FC = () => {
   // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, expandedAnswers]);
+
+  // Toggle answer panel
+  const toggleAnswer = (msgId: string) => {
+    setExpandedAnswers(prev => {
+      const next = new Set(prev);
+      if (next.has(msgId)) next.delete(msgId);
+      else next.add(msgId);
+      return next;
+    });
+  };
 
   // Get a fresh question that hasn't been asked
   const getNextQuestion = (): string => {
     const roleData = interviewRoles.find(r => r.role === selectedRole);
     if (!roleData) return 'Tell me about yourself and your experience.';
 
-    // Map interview type to question pool
     let pool: string[] = [];
     if (selectedType === 'Technical Interview') pool = roleData.sampleQuestions.technical;
     else if (selectedType === 'Behavioral Interview') pool = roleData.sampleQuestions.behavioral;
@@ -151,7 +332,6 @@ export const InterviewAssistant: React.FC = () => {
     else if (selectedType === 'Case Study Interview') pool = [...(roleData.sampleQuestions.caseStudy || []), ...roleData.sampleQuestions.behavioral];
     else pool = [...roleData.sampleQuestions.technical, ...roleData.sampleQuestions.behavioral, ...roleData.sampleQuestions.hr];
 
-    // Filter out asked questions
     const fresh = pool.filter(q => !askedQuestions.has(q));
     if (fresh.length === 0) return pool[Math.floor(Math.random() * pool.length)];
 
@@ -160,7 +340,6 @@ export const InterviewAssistant: React.FC = () => {
     return question;
   };
 
-  // Adapt question intro based on experience level
   const getLevelPrefix = (): string => {
     if (selectedLevel === 'Fresher' || selectedLevel === 'Intern') return 'As someone starting your career, ';
     if (selectedLevel === 'Senior' || selectedLevel === 'Lead') return 'Given your senior experience, ';
@@ -176,25 +355,38 @@ export const InterviewAssistant: React.FC = () => {
       ? `\n\nI've reviewed your profile — I see you have experience with ${userProfile.skills.slice(0, 4).join(', ')}.`
       : '';
 
+    const modeLabel = learningMode ? ' (Learning Mode — sample answers available for each question)' : '';
+
     const greeting: ChatMessage = {
       id: Date.now().toString(),
       sender: 'interviewer',
-      text: `Welcome! I'm your ${selectedType.replace(' Interview', '')} interviewer for the **${selectedRole}** role in ${domain}.${resumeContext}\n\nThis will be a ${maxQuestions}-question session tailored for **${selectedLevel}** level. I'll evaluate each answer on technical accuracy, communication, confidence, and problem-solving.\n\nLet's begin.`,
+      text: `Welcome! I'm your ${selectedType.replace(' Interview', '')} interviewer for the **${selectedRole}** role in ${domain}.${resumeContext}\n\nThis will be a ${maxQuestions}-question session tailored for **${selectedLevel}** level.${modeLabel}\n\nLet's begin.`,
       timestamp: new Date(),
     };
 
     const firstQ = getNextQuestion();
+    const questionText = `${getLevelPrefix()}${firstQ}`;
+    const idealAns = generateIdealAnswer(firstQ, selectedRole, selectedLevel);
+
     const firstQuestion: ChatMessage = {
       id: (Date.now() + 1).toString(),
       sender: 'interviewer',
-      text: `${getLevelPrefix()}${firstQ}`,
+      text: questionText,
       timestamp: new Date(),
+      isQuestion: true,
+      idealAnswer: idealAns,
     };
 
     setMessages([greeting, firstQuestion]);
     setQuestionCount(1);
     setInterviewStarted(true);
     setFinished(false);
+    setExpandedAnswers(new Set());
+
+    // Auto-expand ideal answers in learning mode
+    if (learningMode) {
+      setExpandedAnswers(new Set([(Date.now() + 1).toString()]));
+    }
   };
 
   // Submit user answer
@@ -214,12 +406,10 @@ export const InterviewAssistant: React.FC = () => {
     setLoading(true);
 
     try {
-      // Evaluate answer
       const gemini = getGeminiClient(apiSettings.geminiKey, apiSettings.isSimulator);
       const lastInterviewerMsg = [...messages].reverse().find(m => m.sender === 'interviewer');
       const evalResult = await gemini.evaluateAnswer(lastInterviewerMsg?.text || '', userInput.trim());
 
-      // Feedback message
       const feedbackMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: 'interviewer',
@@ -236,39 +426,41 @@ export const InterviewAssistant: React.FC = () => {
       };
 
       if (questionCount >= maxQuestions) {
-        // End interview
         setMessages(prev => [...prev, feedbackMsg]);
 
-        // Calculate overall scores
         const allScores = [...messages, userMsg, feedbackMsg].filter(m => m.scores);
         allScores.push(feedbackMsg);
         const count = allScores.length;
         const avg = (key: keyof NonNullable<ChatMessage['scores']>) =>
           Math.round(allScores.reduce((sum, m) => sum + (m.scores?.[key] || 0), 0) / Math.max(count, 1));
 
-        const overallTech = avg('technical');
-        const overallConf = avg('confidence');
-        const overallComm = avg('communication');
-
         updateUserProfile({
-          technicalScore: overallTech,
-          confidenceScore: overallConf,
-          communicationScore: overallComm,
+          technicalScore: avg('technical'),
+          confidenceScore: avg('confidence'),
+          communicationScore: avg('communication'),
         });
 
         setTimeout(() => setFinished(true), 500);
       } else {
-        // Ask next question
         const nextQ = getNextQuestion();
+        const questionText = `${getLevelPrefix()}${nextQ}`;
+        const idealAns = generateIdealAnswer(nextQ, selectedRole, selectedLevel);
+
         const nextQuestion: ChatMessage = {
           id: (Date.now() + 2).toString(),
           sender: 'interviewer',
-          text: `${getLevelPrefix()}${nextQ}`,
+          text: questionText,
           timestamp: new Date(),
+          isQuestion: true,
+          idealAnswer: idealAns,
         };
 
         setMessages(prev => [...prev, feedbackMsg, nextQuestion]);
         setQuestionCount(prev => prev + 1);
+
+        if (learningMode) {
+          setExpandedAnswers(prev => new Set([...prev, (Date.now() + 2).toString()]));
+        }
       }
     } catch (error) {
       console.error(error);
@@ -290,7 +482,6 @@ export const InterviewAssistant: React.FC = () => {
 
   const selectedRoleData = interviewRoles.find(r => r.role === selectedRole);
 
-  // Progress bar helper
   const ScoreBar: React.FC<{ value: number; label: string; color: string }> = ({ value, label, color }) => (
     <div className="space-y-1">
       <div className="flex justify-between text-[10px]">
@@ -302,6 +493,103 @@ export const InterviewAssistant: React.FC = () => {
       </div>
     </div>
   );
+
+  // Ideal Answer Card Component
+  const IdealAnswerCard: React.FC<{ idealAnswer: IdealAnswer; msgId: string }> = ({ idealAnswer, msgId }) => {
+    const isExpanded = expandedAnswers.has(msgId);
+    return (
+      <div className="mt-2">
+        <button
+          onClick={() => toggleAnswer(msgId)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition ${
+            isExpanded
+              ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+              : 'bg-brand-indigo/10 border border-brand-indigo/20 text-brand-cyan hover:bg-brand-indigo/20'
+          }`}
+        >
+          {isExpanded ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          {isExpanded ? 'Hide Sample Answer' : 'Show Sample Answer'}
+        </button>
+
+        {isExpanded && (
+          <div className="mt-2 space-y-2 animate-in slide-in-from-top-2">
+            {/* Ideal Answer */}
+            <div className="p-3 rounded-xl bg-brand-indigo/5 border border-brand-indigo/15">
+              <div className="flex items-center gap-1.5 mb-2">
+                <BookOpen className="h-3 w-3 text-brand-cyan" />
+                <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-wider">Ideal Answer</span>
+              </div>
+              <div className="text-[11px] text-brand-silver leading-relaxed whitespace-pre-line">{idealAnswer.answer}</div>
+            </div>
+
+            {/* STAR Breakdown */}
+            {idealAnswer.starBreakdown && (
+              <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/15">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Star className="h-3 w-3 text-purple-400" />
+                  <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">STAR Breakdown</span>
+                </div>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {Object.entries(idealAnswer.starBreakdown).map(([key, val]) => (
+                    <div key={key} className="flex gap-2 text-[10px]">
+                      <span className="font-bold text-purple-300 capitalize min-w-[60px]">{key}:</span>
+                      <span className="text-brand-silver">{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Key Points */}
+            <div className="p-3 rounded-xl bg-brand-success/5 border border-brand-success/15">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Lightbulb className="h-3 w-3 text-brand-success" />
+                <span className="text-[10px] font-bold text-brand-success uppercase tracking-wider">Key Points Expected</span>
+              </div>
+              <div className="space-y-1">
+                {idealAnswer.keyPoints.map((pt, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-[10px] text-brand-silver">
+                    <CheckCircle2 className="h-3 w-3 text-brand-success shrink-0 mt-0.5" />
+                    {pt}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Common Mistakes & Evaluation side by side */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <AlertTriangle className="h-3 w-3 text-red-400" />
+                  <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Common Mistakes</span>
+                </div>
+                <div className="space-y-1">
+                  {idealAnswer.commonMistakes.map((m, i) => (
+                    <div key={i} className="flex items-start gap-1.5 text-[10px] text-brand-silver">
+                      <span className="text-red-400 shrink-0">✗</span>{m}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/15">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <ListChecks className="h-3 w-3 text-blue-400" />
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Evaluation Criteria</span>
+                </div>
+                <div className="space-y-1">
+                  {idealAnswer.evaluationCriteria.map((c, i) => (
+                    <div key={i} className="flex items-start gap-1.5 text-[10px] text-brand-silver">
+                      <span className="text-blue-400 shrink-0">◉</span>{c}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="h-full overflow-y-auto p-6 grid-bg relative">
@@ -326,7 +614,6 @@ export const InterviewAssistant: React.FC = () => {
           <div className="space-y-6">
             <GlassCard>
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                {/* Domain filter */}
                 <div>
                   <label className="block text-xs font-semibold text-brand-silver mb-1.5">Industry</label>
                   <select
@@ -339,7 +626,6 @@ export const InterviewAssistant: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Role search */}
                 <div className="relative lg:col-span-2">
                   <label className="block text-xs font-semibold text-brand-silver mb-1.5">Target Role</label>
                   <div className="relative">
@@ -368,7 +654,6 @@ export const InterviewAssistant: React.FC = () => {
                   )}
                 </div>
 
-                {/* Experience Level */}
                 <div>
                   <label className="block text-xs font-semibold text-brand-silver mb-1.5">Level</label>
                   <select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value as ExperienceLevel)}
@@ -391,6 +676,23 @@ export const InterviewAssistant: React.FC = () => {
                 </div>
               </div>
 
+              {/* Learning Mode Toggle */}
+              <div className="mt-4 pt-4 border-t border-brand-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-amber-400" />
+                  <div>
+                    <div className="text-xs font-bold text-white">Learning Mode</div>
+                    <div className="text-[10px] text-brand-silver">Show ideal answers, key points, and evaluation criteria for each question</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setLearningMode(!learningMode)}
+                  className={`relative h-6 w-11 rounded-full transition-colors ${learningMode ? 'bg-amber-500' : 'bg-white/10'}`}
+                >
+                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${learningMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+
               {/* Selected role preview */}
               {selectedRoleData && (
                 <div className="mt-4 pt-3 border-t border-brand-border flex flex-wrap gap-2 items-center">
@@ -399,16 +701,22 @@ export const InterviewAssistant: React.FC = () => {
                   <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-brand-indigo/10 border border-brand-indigo/20 text-brand-cyan">{selectedRoleData.domain}</span>
                   <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-white/5 border border-white/10 text-brand-silver">{selectedLevel}</span>
                   <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-brand-success/10 border border-brand-success/20 text-brand-success">{selectedType}</span>
+                  {learningMode && <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400">📖 Learning</span>}
                 </div>
               )}
             </GlassCard>
 
-            {/* Start button */}
-            <div className="text-center">
-              <button onClick={startInterview}
+            {/* Start buttons */}
+            <div className="text-center flex justify-center gap-3">
+              <button onClick={() => { setLearningMode(false); startInterview(); }}
                 className="px-8 py-4 rounded-xl bg-brand-indigo hover:bg-brand-indigo/80 text-white font-bold text-sm transition shadow-[0_0_20px_rgba(63,78,255,0.4)] inline-flex items-center gap-2">
                 <Video className="h-5 w-5" />
-                Start Interview Session
+                Start Interview
+              </button>
+              <button onClick={() => { setLearningMode(true); startInterview(); }}
+                className="px-8 py-4 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 font-bold text-sm transition inline-flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Start Learning Mode
               </button>
             </div>
           </div>
@@ -417,9 +725,7 @@ export const InterviewAssistant: React.FC = () => {
         {/* ── INTERVIEW IN PROGRESS ── */}
         {interviewStarted && !finished && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Chat panel */}
             <div className="lg:col-span-3 space-y-4">
-              {/* Chat window */}
               <GlassCard className="p-0 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border bg-white/5">
@@ -432,7 +738,10 @@ export const InterviewAssistant: React.FC = () => {
                       <div className="text-[10px] text-brand-silver">{selectedType} • {selectedLevel}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    {learningMode && (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400">📖 Learning</span>
+                    )}
                     <span className="text-[10px] font-bold text-brand-silver">Q{questionCount}/{maxQuestions}</span>
                     <div className="h-1.5 w-20 bg-white/5 rounded-full overflow-hidden">
                       <div className="h-full bg-brand-cyan rounded-full transition-all" style={{ width: `${(questionCount / maxQuestions) * 100}%` }} />
@@ -441,38 +750,44 @@ export const InterviewAssistant: React.FC = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="h-[400px] overflow-y-auto p-4 space-y-4">
+                <div className="h-[450px] overflow-y-auto p-4 space-y-4">
                   {messages.map(msg => (
-                    <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${msg.sender === 'interviewer' ? 'bg-brand-indigo/20 border border-brand-indigo/40' : 'bg-brand-cyan/20 border border-brand-cyan/40'}`}>
-                        {msg.sender === 'interviewer' ? <Bot className="h-3.5 w-3.5 text-brand-cyan" /> : <User className="h-3.5 w-3.5 text-brand-cyan" />}
-                      </div>
-                      <div className={`max-w-[75%] space-y-2`}>
-                        <div className={`p-3 rounded-2xl text-xs leading-relaxed ${msg.sender === 'interviewer' ? 'bg-white/5 border border-white/10 text-white rounded-tl-sm' : 'bg-brand-indigo/20 border border-brand-indigo/30 text-white rounded-tr-sm'}`}>
-                          {msg.text}
+                    <div key={msg.id}>
+                      <div className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${msg.sender === 'interviewer' ? 'bg-brand-indigo/20 border border-brand-indigo/40' : 'bg-brand-cyan/20 border border-brand-cyan/40'}`}>
+                          {msg.sender === 'interviewer' ? <Bot className="h-3.5 w-3.5 text-brand-cyan" /> : <User className="h-3.5 w-3.5 text-brand-cyan" />}
                         </div>
-                        {/* Inline score badges */}
-                        {msg.scores && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {[
-                              { label: 'Tech', value: msg.scores.technical, color: 'text-brand-cyan' },
-                              { label: 'Comm', value: msg.scores.communication, color: 'text-brand-indigo' },
-                              { label: 'Conf', value: msg.scores.confidence, color: 'text-brand-success' },
-                            ].map((s, i) => (
-                              <span key={i} className={`px-2 py-0.5 rounded text-[9px] font-bold bg-white/5 border border-white/10 ${s.color}`}>
-                                {s.label}: {s.value}%
-                              </span>
-                            ))}
+                        <div className="max-w-[80%] space-y-2">
+                          <div className={`p-3 rounded-2xl text-xs leading-relaxed ${msg.sender === 'interviewer' ? 'bg-white/5 border border-white/10 text-white rounded-tl-sm' : 'bg-brand-indigo/20 border border-brand-indigo/30 text-white rounded-tr-sm'}`}>
+                            {msg.text}
                           </div>
-                        )}
-                        {/* Model answer toggle */}
-                        {msg.suggestedAnswer && (
-                          <details className="text-[10px]">
-                            <summary className="text-brand-cyan cursor-pointer hover:underline font-semibold">View model answer</summary>
-                            <p className="mt-1 p-2 rounded bg-white/5 border border-white/10 text-brand-silver italic">{msg.suggestedAnswer}</p>
-                          </details>
-                        )}
-                        <div className="text-[9px] text-brand-silver/50">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          {/* Scores */}
+                          {msg.scores && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                { label: 'Tech', value: msg.scores.technical, color: 'text-brand-cyan' },
+                                { label: 'Comm', value: msg.scores.communication, color: 'text-brand-indigo' },
+                                { label: 'Conf', value: msg.scores.confidence, color: 'text-brand-success' },
+                              ].map((s, i) => (
+                                <span key={i} className={`px-2 py-0.5 rounded text-[9px] font-bold bg-white/5 border border-white/10 ${s.color}`}>
+                                  {s.label}: {s.value}%
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {/* Model answer from evaluation */}
+                          {msg.suggestedAnswer && (
+                            <details className="text-[10px]">
+                              <summary className="text-brand-cyan cursor-pointer hover:underline font-semibold">View model answer</summary>
+                              <p className="mt-1 p-2 rounded bg-white/5 border border-white/10 text-brand-silver italic">{msg.suggestedAnswer}</p>
+                            </details>
+                          )}
+                          {/* Ideal Answer Card for question messages */}
+                          {msg.isQuestion && msg.idealAnswer && (
+                            <IdealAnswerCard idealAnswer={msg.idealAnswer} msgId={msg.id} />
+                          )}
+                          <div className="text-[9px] text-brand-silver/50">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -508,7 +823,7 @@ export const InterviewAssistant: React.FC = () => {
               </GlassCard>
             </div>
 
-            {/* Side panel — live scores */}
+            {/* Side panel */}
             <div className="space-y-4">
               <GlassCard className="space-y-3">
                 <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
@@ -539,10 +854,11 @@ export const InterviewAssistant: React.FC = () => {
                   <div className="flex justify-between"><span className="text-brand-silver">Type</span><span className="text-white font-bold">{selectedType.replace(' Interview', '')}</span></div>
                   <div className="flex justify-between"><span className="text-brand-silver">Level</span><span className="text-white font-bold">{selectedLevel}</span></div>
                   <div className="flex justify-between"><span className="text-brand-silver">Progress</span><span className="text-white font-bold">{questionCount}/{maxQuestions}</span></div>
+                  <div className="flex justify-between"><span className="text-brand-silver">Mode</span><span className={`font-bold ${learningMode ? 'text-amber-400' : 'text-white'}`}>{learningMode ? '📖 Learning' : '🎯 Interview'}</span></div>
                 </div>
               </GlassCard>
 
-              <button onClick={() => { setInterviewStarted(false); setMessages([]); setQuestionCount(0); setAskedQuestions(new Set()); }}
+              <button onClick={() => { setInterviewStarted(false); setMessages([]); setQuestionCount(0); setAskedQuestions(new Set()); setExpandedAnswers(new Set()); }}
                 className="w-full py-2 border border-white/10 text-brand-silver hover:text-white rounded-lg text-xs font-semibold hover:bg-white/5 transition">
                 End Session
               </button>
@@ -562,7 +878,6 @@ export const InterviewAssistant: React.FC = () => {
                 <p className="text-brand-silver text-xs mt-1">{selectedRole} • {selectedType} • {selectedLevel} Level</p>
               </div>
 
-              {/* Big score ring */}
               <div className="relative inline-flex items-center justify-center">
                 <svg className="h-28 w-28 -rotate-90" viewBox="0 0 120 120">
                   <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
@@ -575,7 +890,6 @@ export const InterviewAssistant: React.FC = () => {
               </div>
             </GlassCard>
 
-            {/* Score breakdown */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { label: 'Technical', value: sessionScores.technical, icon: <Zap className="h-4 w-4" />, color: 'text-brand-cyan' },
@@ -591,7 +905,6 @@ export const InterviewAssistant: React.FC = () => {
               ))}
             </div>
 
-            {/* Hiring recommendation */}
             <GlassCard className="space-y-3">
               <div className="flex items-center gap-2 border-b border-brand-border pb-2">
                 <Award className="h-4 w-4 text-amber-500" />
@@ -613,7 +926,6 @@ export const InterviewAssistant: React.FC = () => {
               </div>
             </GlassCard>
 
-            {/* Strengths & weaknesses */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <GlassCard className="space-y-3">
                 <div className="flex items-center gap-2"><Star className="h-4 w-4 text-brand-success" /><h3 className="text-xs font-bold text-white">Strengths</h3></div>
@@ -637,9 +949,8 @@ export const InterviewAssistant: React.FC = () => {
               </GlassCard>
             </div>
 
-            {/* Action buttons */}
             <div className="flex justify-center gap-3">
-              <button onClick={() => { setInterviewStarted(false); setMessages([]); setQuestionCount(0); setFinished(false); setAskedQuestions(new Set()); }}
+              <button onClick={() => { setInterviewStarted(false); setMessages([]); setQuestionCount(0); setFinished(false); setAskedQuestions(new Set()); setExpandedAnswers(new Set()); }}
                 className="px-5 py-2.5 rounded-xl border border-white/10 text-white font-bold text-xs hover:bg-white/5 transition">
                 New Interview
               </button>
