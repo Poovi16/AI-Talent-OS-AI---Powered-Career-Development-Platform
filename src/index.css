@@ -70,12 +70,14 @@
 .gradient-text-indigo-cyan {
   background: linear-gradient(135deg, #3f4eff 0%, #00e5ff 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .gradient-text-rainbow {
   background: linear-gradient(135deg, #3f4eff 0%, #00e5ff 50%, #10b981 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
