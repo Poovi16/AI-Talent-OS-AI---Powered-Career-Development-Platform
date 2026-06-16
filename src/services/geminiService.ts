@@ -612,48 +612,178 @@ Return a single JSON object with this EXACT structure (no markdown, no extra tex
       return JSON.parse(responseText);
     },
 
-    // 6. Mock Interview Answer Feedback
+    // 6. Universal Interview Answer Evaluation Engine
     evaluateAnswer: async (question: string, userAnswer: string): Promise<GeminiInterviewFeedback> => {
       if (isSim) {
-        await new Promise((r) => setTimeout(r, 2000));
-        
-        const len = userAnswer.trim().length;
-        let scoreVal = 50;
-        let feedback = "Your answer is a bit brief. Try to structure it using the STAR method (Situation, Task, Action, Result) and add specific tech terminology.";
-        let modelAns = "A great answer should outline the core concepts clearly, provide a concrete example from your past work, and explain the positive outcome.";
+        await new Promise((r) => setTimeout(r, 1800));
 
-        if (len > 150) {
-          scoreVal = 85;
-          feedback = "Excellent response. You provided details on implementation, addressed the trade-offs, and showed good technical awareness.";
-          modelAns = "Your answer already covers the primary concepts: you mentioned system constraints, specific libraries used, and how you evaluated performance metrics. To polish, add a brief mention of production monitoring.";
-        } else if (len > 50) {
-          scoreVal = 70;
-          feedback = "Good foundation. However, you should expand more on the 'Result' of your actions or explain the internal mechanics of the tool you used.";
+        const answer = userAnswer.trim();
+        const words = answer.split(/\s+/);
+        const wordCount = words.length;
+        const lowerAnswer = answer.toLowerCase();
+        const lowerQuestion = question.toLowerCase();
+
+        // ── Deep Content Analysis ──
+        // 1. STAR method detection
+        const hasSituation = /\b(situation|context|background|at my|when i was|in my|at the time|working at|during)\b/i.test(answer);
+        const hasTask = /\b(task|goal|objective|challenge|responsible for|needed to|had to|was asked|required)\b/i.test(answer);
+        const hasAction = /\b(i (built|created|designed|implemented|developed|wrote|deployed|led|managed|optimized|analyzed|resolved|fixed|refactored|automated|configured|migrated))\b/i.test(answer);
+        const hasResult = /\b(result|outcome|impact|improved|reduced|increased|achieved|saved|generated|delivered|led to|success|grew|growth|reduction)\b/i.test(answer);
+        const starComponents = [hasSituation, hasTask, hasAction, hasResult].filter(Boolean).length;
+
+        // 2. Specificity & metrics detection
+        const hasNumbers = /\d+(%|x|k|m|ms|sec|hours?|days?|weeks?|months?|users?|requests?|GB|TB|endpoints?|models?|features?)/i.test(answer);
+        const hasTechTerms = /\b(api|database|sql|python|javascript|react|docker|kubernetes|aws|azure|gcp|tensorflow|pytorch|model|algorithm|pipeline|microservice|ci\/cd|agile|scrum|jira|git|rest|graphql|nosql|redis|kafka|spark|hadoop|tableau|excel|figma|seo|a\/b test|kpi|roi|p&l|revenue|compliance|audit|regulation|diagnosis|treatment|curriculum|assessment|cad|solidworks|autocad)\b/i.test(answer);
+        const hasExamples = /\b(for example|for instance|such as|specifically|in particular|one case|one time|a project|we used)\b/i.test(answer);
+        const hasReflection = /\b(learned|realized|would do differently|in hindsight|takeaway|lesson|next time|improvement|going forward)\b/i.test(answer);
+
+        // 3. Question relevance detection
+        const questionKeywords = lowerQuestion.split(/\s+/).filter(w => w.length > 4);
+        const relevantTerms = questionKeywords.filter(kw => lowerAnswer.includes(kw));
+        const relevanceRatio = questionKeywords.length > 0 ? relevantTerms.length / questionKeywords.length : 0.5;
+
+        // 4. Communication quality
+        const sentenceCount = answer.split(/[.!?]+/).filter(s => s.trim().length > 5).length;
+        const hasStructure = sentenceCount >= 3;
+        const hasConnectors = /\b(first|second|additionally|moreover|furthermore|however|therefore|consequently|in conclusion|to summarize|as a result)\b/i.test(answer);
+
+        // ── Score Calculation ──
+        let technicalScore = 35;
+        let communicationScore = 35;
+        let confidenceScore = 40;
+
+        // Technical accuracy — based on content depth
+        if (hasTechTerms) technicalScore += 15;
+        if (hasNumbers) technicalScore += 12;
+        if (hasExamples) technicalScore += 10;
+        if (relevanceRatio > 0.3) technicalScore += 10;
+        if (wordCount > 80) technicalScore += 5;
+        if (hasAction) technicalScore += 8;
+        technicalScore = Math.min(98, technicalScore);
+
+        // Communication — based on structure and clarity
+        if (hasStructure) communicationScore += 15;
+        if (hasConnectors) communicationScore += 10;
+        if (sentenceCount >= 4) communicationScore += 8;
+        if (starComponents >= 3) communicationScore += 15;
+        if (wordCount > 40 && wordCount < 300) communicationScore += 7;
+        if (wordCount <= 15) communicationScore -= 10;
+        communicationScore = Math.min(98, Math.max(20, communicationScore));
+
+        // Confidence — based on specificity and conviction
+        if (hasAction) confidenceScore += 12;
+        if (hasResult) confidenceScore += 12;
+        if (hasNumbers) confidenceScore += 8;
+        if (!(/\b(maybe|i think|probably|i guess|not sure|i don't know)\b/i.test(answer))) confidenceScore += 10;
+        if (hasReflection) confidenceScore += 8;
+        if (wordCount > 60) confidenceScore += 5;
+        confidenceScore = Math.min(98, confidenceScore);
+
+        // ── Generate Contextual Feedback ──
+        const strengths: string[] = [];
+        const improvements: string[] = [];
+
+        if (hasTechTerms) strengths.push('Used relevant technical terminology');
+        if (hasNumbers) strengths.push('Included quantifiable metrics and data points');
+        if (hasExamples) strengths.push('Provided concrete examples');
+        if (starComponents >= 3) strengths.push('Good use of STAR method structure');
+        if (hasAction) strengths.push('Clearly described actions you took');
+        if (hasResult) strengths.push('Mentioned measurable outcomes');
+        if (hasReflection) strengths.push('Showed self-awareness and learning');
+        if (hasStructure) strengths.push('Well-structured response with clear flow');
+
+        if (!hasNumbers) improvements.push('Add specific numbers and metrics (e.g., "reduced latency by 40%")');
+        if (!hasExamples) improvements.push('Include a concrete real-world example from your experience');
+        if (starComponents < 3) improvements.push('Structure your answer using the STAR method (Situation, Task, Action, Result)');
+        if (!hasResult) improvements.push('End with the measurable impact or outcome of your actions');
+        if (!hasTechTerms) improvements.push('Use industry-specific terminology relevant to the role');
+        if (wordCount < 30) improvements.push('Expand your answer — provide more detail and context');
+        if (!hasReflection) improvements.push('Add what you learned or would do differently next time');
+        if (!hasConnectors) improvements.push('Use transition words to improve answer flow');
+
+        // Ensure at least one of each
+        if (strengths.length === 0) strengths.push('Attempted to address the question directly');
+        if (improvements.length === 0) improvements.push('Consider adding one more specific technical detail');
+
+        // Compose feedback text
+        const feedbackParts: string[] = [];
+
+        // Overall assessment
+        const avgScore = Math.round((technicalScore + communicationScore + confidenceScore) / 3);
+        if (avgScore >= 80) {
+          feedbackParts.push('**Strong answer.** You demonstrated solid understanding and communicated effectively.');
+        } else if (avgScore >= 60) {
+          feedbackParts.push('**Decent answer with room for improvement.** You addressed the core question but could add more depth.');
+        } else if (avgScore >= 40) {
+          feedbackParts.push('**Basic answer that needs more substance.** Try to be more specific and structured.');
+        } else {
+          feedbackParts.push('**This answer needs significant improvement.** Focus on directly addressing the question with examples.');
         }
+
+        // Strengths section
+        feedbackParts.push('\n\n**Strengths:**\n' + strengths.slice(0, 3).map(s => `• ${s}`).join('\n'));
+
+        // Improvements section
+        feedbackParts.push('\n\n**Areas to Improve:**\n' + improvements.slice(0, 3).map(s => `• ${s}`).join('\n'));
+
+        // STAR score for behavioral questions
+        if (lowerQuestion.includes('tell me about') || lowerQuestion.includes('describe a time') || lowerQuestion.includes('give me an example')) {
+          feedbackParts.push(`\n\n**STAR Score:** ${starComponents}/4 components detected (${['Situation', 'Task', 'Action', 'Result'].filter((_, i) => [hasSituation, hasTask, hasAction, hasResult][i]).join(', ') || 'None'}).`);
+        }
+
+        const feedback = feedbackParts.join('');
+
+        // ── Generate Model Answer ──
+        const modelAnswer = avgScore >= 80
+          ? `Your answer is already strong. To make it exceptional: ${improvements[0] || 'Add one more specific metric to quantify your impact.'}`
+          : `A stronger answer would: 1) Start with context — describe the situation and your role. 2) Explain your specific actions with technical details. 3) Quantify the results (e.g., "improved accuracy by 15%", "reduced costs by $50K"). 4) Share what you learned. Example structure: "At [Company], I was tasked with [challenge]. I [specific actions with tools/methods]. This resulted in [measurable outcome]. The key takeaway was [learning]."`;
 
         return {
           feedback,
-          technicalScore: scoreVal,
-          confidenceScore: scoreVal + 5,
-          communicationScore: scoreVal - 2,
-          suggestedAnswer: modelAns
+          technicalScore,
+          confidenceScore,
+          communicationScore,
+          suggestedAnswer: modelAnswer
         };
       }
 
-      const prompt = `
-        Evaluate this interview answer:
-        Question: ${question}
-        User Answer: ${userAnswer}
-        
-        Provide structured feedback in JSON matching this interface:
-        {
-          "feedback": string,
-          "technicalScore": number (0-100),
-          "confidenceScore": number (0-100),
-          "communicationScore": number (0-100),
-          "suggestedAnswer": string
-        }
-      `;
+      // ── Real Gemini API Evaluation ──
+      const prompt = `You are a senior professional interviewer conducting a real interview. Evaluate this candidate's answer with recruiter-grade precision.
+
+INTERVIEW QUESTION:
+"${question}"
+
+CANDIDATE'S ANSWER:
+"${userAnswer}"
+
+EVALUATION CRITERIA:
+1. **Technical Accuracy** (0-100): Does the answer demonstrate correct domain knowledge? Are technical terms used properly? Is the depth appropriate?
+2. **Communication** (0-100): Is the answer well-structured? Does it use the STAR method (for behavioral)? Is it clear and concise?
+3. **Confidence** (0-100): Does the candidate sound definitive? Are there hedging words? Do they back claims with evidence?
+4. **Suggested Answer**: Provide a model answer that would score 90+ on all criteria. Be specific to the question.
+5. **Feedback**: Write detailed evaluation with:
+   - 2-3 specific strengths (what they did well)
+   - 2-3 specific improvements (what to add/change)
+   - STAR score if behavioral (X/4 components)
+   - Overall assessment (Strong/Good/Needs Improvement)
+
+IMPORTANT:
+- Be honest and critical — do NOT inflate scores
+- A generic or vague answer should score 30-50
+- A brief 1-sentence answer should score 20-40
+- Only detailed, specific, well-structured answers score 75+
+- Deduct points for hedging language ("I think", "maybe", "probably")
+- Award points for metrics, examples, and technical specificity
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "feedback": "string with markdown formatting for strengths/improvements",
+  "technicalScore": number,
+  "confidenceScore": number,
+  "communicationScore": number,
+  "suggestedAnswer": "string"
+}`; 
+
       const responseText = await runGemini(prompt);
       return JSON.parse(responseText);
     },
