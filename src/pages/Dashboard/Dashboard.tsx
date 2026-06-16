@@ -3,35 +3,35 @@ import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { StatCard } from '../../components/StatCard/StatCard';
 import { GlassCard } from '../../components/GlassCard/GlassCard';
-import { 
-  Users, 
-  FileCheck, 
-  Briefcase, 
-  Video, 
-  GraduationCap, 
-  Brain, 
-  Plus, 
-  Search, 
-  ShieldCheck, 
-  Key, 
+import {
+  Users,
+  FileCheck,
+  Briefcase,
+  Video,
+  GraduationCap,
+  Brain,
+  Plus,
+  Search,
+  ShieldCheck,
+  Key,
   Terminal,
   ChevronRight
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { 
-    activeRole, 
-    userProfile, 
-    candidates, 
-    jobs, 
-    learningCourses, 
+  const {
+    activeRole,
+    userProfile,
+    candidates,
+    jobs,
+    learningCourses,
     setActivePage,
     addCandidate,
     addActivityLog
   } = useStore();
 
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
-  
+
   // New candidate state
   const [newCandName, setNewCandName] = useState('');
   const [newCandEmail, setNewCandEmail] = useState('');
@@ -61,7 +61,7 @@ export const Dashboard: React.FC = () => {
   // Candidate Dashboard metrics
   const completedCourses = learningCourses.filter(c => c.status === 'completed').length;
   const inProgressCourses = learningCourses.filter(c => c.status === 'in-progress').length;
-  const resumeStatusText = userProfile.resumeUploaded 
+  const resumeStatusText = userProfile.resumeUploaded
     ? `Score: ${userProfile.resumeScore || 0}% / ATS: ${userProfile.atsScore || 0}%`
     : 'No Resume Uploaded';
 
@@ -78,13 +78,13 @@ export const Dashboard: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={() => setActivePage('analyzer')}
               className="px-5 py-3 rounded-xl bg-brand-indigo text-white font-bold text-sm shadow-[0_0_20px_rgba(63,78,255,0.4)] hover:bg-brand-indigo/80 transition"
             >
               Analyze Resume
             </button>
-            <button 
+            <button
               onClick={() => setActivePage('coach')}
               className="px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-sm hover:bg-white/10 transition"
             >
@@ -96,31 +96,31 @@ export const Dashboard: React.FC = () => {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          label="Resume Score" 
-          value={userProfile.resumeUploaded ? `${userProfile.resumeScore || 0}/100` : 'N/A'} 
-          icon={FileCheck} 
+        <StatCard
+          label="Resume Score"
+          value={userProfile.resumeUploaded ? `${userProfile.resumeScore || 0}/100` : 'N/A'}
+          icon={FileCheck}
           subtext={resumeStatusText}
           iconColor="text-brand-cyan"
         />
-        <StatCard 
-          label="Recommended Jobs" 
-          value={jobs.length} 
-          icon={Briefcase} 
+        <StatCard
+          label="Recommended Jobs"
+          value={jobs.length}
+          icon={Briefcase}
           subtext={`${jobs.filter(j => j.status === 'applied').length} Applied`}
           iconColor="text-brand-indigo"
         />
-        <StatCard 
-          label="Skill gap" 
-          value={userProfile.resumeUploaded ? `${userProfile.missingSkills?.length || 4} Missing` : 'Needs analysis'} 
-          icon={Brain} 
+        <StatCard
+          label="Skill gap"
+          value={userProfile.resumeUploaded ? `${userProfile.missingSkills?.length || 4} Missing` : 'Needs analysis'}
+          icon={Brain}
           subtext="Skills to reach Target Role"
           iconColor="text-pink-500"
         />
-        <StatCard 
-          label="Learning Progress" 
-          value={`${completedCourses}/${learningCourses.length}`} 
-          icon={GraduationCap} 
+        <StatCard
+          label="Learning Progress"
+          value={`${completedCourses}/${learningCourses.length}`}
+          icon={GraduationCap}
           subtext={`${inProgressCourses} Active Courses`}
           iconColor="text-brand-success"
         />
@@ -130,10 +130,10 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <GlassCard className="lg:col-span-2 space-y-4">
           <h2 className="text-xl font-bold font-display text-white">Recommended Next Steps</h2>
-          
+
           <div className="space-y-3">
             {/* Step 1 */}
-            <div 
+            <div
               onClick={() => setActivePage('analyzer')}
               className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-brand-indigo/40 hover:bg-white/10 transition cursor-pointer"
             >
@@ -150,7 +150,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Step 2 */}
-            <div 
+            <div
               onClick={() => setActivePage('gap')}
               className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-pink-500/40 hover:bg-white/10 transition cursor-pointer"
             >
@@ -167,7 +167,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Step 3 */}
-            <div 
+            <div
               onClick={() => setActivePage('interview')}
               className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-brand-cyan/40 hover:bg-white/10 transition cursor-pointer"
             >
@@ -193,10 +193,10 @@ export const Dashboard: React.FC = () => {
               <h3 className="font-display font-extrabold text-md text-white">Coach Insight</h3>
             </div>
             <p className="text-sm text-brand-silver leading-relaxed italic">
-              "Alex, I noticed a 65% alignment with lead engineer openings. To jump to 90%, prioritize completing your course in 'Generative AI & Fine-Tuning' and add LangChain to your resume skills."
+              "Poovarasan, I noticed a 65% alignment with lead engineer openings. To jump to 90%, prioritize completing your course in 'Generative AI & Fine-Tuning' and add LangChain to your resume skills."
             </p>
           </div>
-          <button 
+          <button
             onClick={() => setActivePage('coach')}
             className="mt-6 w-full py-2.5 rounded-xl border border-brand-indigo/30 bg-brand-indigo/10 text-brand-cyan font-bold hover:bg-brand-indigo/20 text-xs transition"
           >
@@ -218,7 +218,7 @@ export const Dashboard: React.FC = () => {
             <h1 className="text-3xl font-extrabold font-display text-white">Talent Acquisition Portal</h1>
             <p className="text-brand-silver text-sm">Active pipelines for recruiter tracking.</p>
           </div>
-          <button 
+          <button
             onClick={() => setShowAddCandidateModal(true)}
             className="px-4 py-2.5 rounded-xl bg-brand-indigo hover:bg-brand-indigo/80 text-white font-bold text-sm transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(63,78,255,0.3)]"
           >
@@ -228,33 +228,33 @@ export const Dashboard: React.FC = () => {
 
         {/* Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
-            label="Total Candidates" 
-            value={candidates.length} 
-            icon={Users} 
+          <StatCard
+            label="Total Candidates"
+            value={candidates.length}
+            icon={Users}
             trend={{ value: 12, isPositive: true }}
             subtext="registered in database"
             iconColor="text-brand-cyan"
           />
-          <StatCard 
-            label="Screening Pipelines" 
-            value={candidates.filter(c => c.stage === 'screening' || c.stage === 'applied').length} 
-            icon={Search} 
+          <StatCard
+            label="Screening Pipelines"
+            value={candidates.filter(c => c.stage === 'screening' || c.stage === 'applied').length}
+            icon={Search}
             trend={{ value: 4, isPositive: false }}
             subtext="candidates to review"
             iconColor="text-brand-indigo"
           />
-          <StatCard 
-            label="Interviews Scheduled" 
-            value={activeInterviews} 
-            icon={Video} 
+          <StatCard
+            label="Interviews Scheduled"
+            value={activeInterviews}
+            icon={Video}
             subtext="active calendar items"
             iconColor="text-pink-500"
           />
-          <StatCard 
-            label="Hired Candidates" 
-            value={hiredCount} 
-            icon={ShieldCheck} 
+          <StatCard
+            label="Hired Candidates"
+            value={hiredCount}
+            icon={ShieldCheck}
             subtext="accepted offer letters"
             iconColor="text-brand-success"
           />
@@ -265,14 +265,14 @@ export const Dashboard: React.FC = () => {
           <GlassCard className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold font-display text-white">Recent Applicants</h2>
-              <button 
-                onClick={() => setActivePage('recruiter')} 
+              <button
+                onClick={() => setActivePage('recruiter')}
                 className="text-xs text-brand-cyan hover:underline font-bold"
               >
                 View Kanban Board →
               </button>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -291,11 +291,10 @@ export const Dashboard: React.FC = () => {
                       <td className="py-3 text-brand-silver">{cand.title}</td>
                       <td className="py-3 text-brand-silver">{cand.experience}</td>
                       <td className="py-3">
-                        <span className={`px-2 py-0.5 rounded font-bold ${
-                          cand.resumeScore >= 90 ? 'bg-brand-success/10 text-brand-success' :
-                          cand.resumeScore >= 80 ? 'bg-brand-indigo/10 text-brand-indigo' :
-                          'bg-amber-500/10 text-amber-500'
-                        }`}>
+                        <span className={`px-2 py-0.5 rounded font-bold ${cand.resumeScore >= 90 ? 'bg-brand-success/10 text-brand-success' :
+                            cand.resumeScore >= 80 ? 'bg-brand-indigo/10 text-brand-indigo' :
+                              'bg-amber-500/10 text-amber-500'
+                          }`}>
                           {cand.resumeScore}%
                         </span>
                       </td>
@@ -350,31 +349,31 @@ export const Dashboard: React.FC = () => {
 
         {/* Global Statistics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
-            label="System Health" 
-            value="99.9%" 
-            icon={ShieldCheck} 
+          <StatCard
+            label="System Health"
+            value="99.9%"
+            icon={ShieldCheck}
             subtext="Operational"
             iconColor="text-brand-success"
           />
-          <StatCard 
-            label="Candidates in Storage" 
-            value={candidates.length} 
-            icon={Users} 
+          <StatCard
+            label="Candidates in Storage"
+            value={candidates.length}
+            icon={Users}
             subtext="Synced to local storage"
             iconColor="text-brand-cyan"
           />
-          <StatCard 
-            label="Active Job Postings" 
-            value={jobs.length} 
-            icon={Briefcase} 
+          <StatCard
+            label="Active Job Postings"
+            value={jobs.length}
+            icon={Briefcase}
             subtext="Configured postings"
             iconColor="text-brand-indigo"
           />
-          <StatCard 
-            label="API Configuration" 
-            value="ONLINE" 
-            icon={Key} 
+          <StatCard
+            label="API Configuration"
+            value="ONLINE"
+            icon={Key}
             subtext="Gemini Engine"
             iconColor="text-pink-500"
           />
@@ -387,7 +386,7 @@ export const Dashboard: React.FC = () => {
               <Terminal className="h-5 w-5 text-brand-cyan" />
               <h2 className="text-lg font-bold font-display text-white">Operational Console Logger</h2>
             </div>
-            
+
             <div className="bg-black/80 rounded-xl p-4 border border-white/5 font-mono text-[11px] text-brand-success space-y-2 max-h-60 overflow-y-auto">
               <div>&gt; _ system_daemon: listening on port 5173</div>
               <div>&gt; _ db_client: initialized connection successfully</div>
@@ -400,7 +399,7 @@ export const Dashboard: React.FC = () => {
           <GlassCard className="space-y-4">
             <h3 className="font-display font-extrabold text-md text-white border-b border-brand-border pb-3">Dev Tools</h3>
             <div className="space-y-2">
-              <button 
+              <button
                 onClick={() => {
                   if (confirm("Reset local storage and reload page?")) {
                     useStore.getState().resetStore();
@@ -422,7 +421,7 @@ export const Dashboard: React.FC = () => {
     <div className="h-full overflow-y-auto p-6 grid-bg relative">
       <div className="glow-orb-indigo top-1/4 left-1/3 animate-pulse-slow"></div>
       <div className="glow-orb-cyan bottom-1/4 right-1/4 animate-pulse-slow"></div>
-      
+
       {activeRole === 'candidate' && renderCandidateDashboard()}
       {activeRole === 'recruiter' && renderRecruiterDashboard()}
       {activeRole === 'admin' && renderAdminDashboard()}
@@ -433,14 +432,14 @@ export const Dashboard: React.FC = () => {
           <div className="w-full max-w-md glass-panel p-6 border border-brand-border">
             <div className="flex items-center justify-between border-b border-brand-border pb-4 mb-4">
               <h3 className="font-display font-extrabold text-lg text-white">Register Candidate</h3>
-              <button 
+              <button
                 onClick={() => setShowAddCandidateModal(false)}
                 className="text-brand-silver hover:text-white"
               >
                 ✕
               </button>
             </div>
-            
+
             <form onSubmit={handleCreateCandidate} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-brand-silver mb-1">Full Name</label>
