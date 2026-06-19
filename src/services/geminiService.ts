@@ -1085,6 +1085,727 @@ If it's regular chat, omit the roadmap field entirely.`;
 
       const responseText = await runGemini(prompt);
       return JSON.parse(responseText);
+    },
+
+    // 8. Learning Assistant — Full AI Tutor (ChatGPT-style responses)
+    chatLearningAssistant: async (
+      question: string,
+      role: string,
+      level: string,
+      conversationHistory: { sender: string; text: string }[]
+    ): Promise<{ answer: string; type: 'explanation' | 'interview_tip' | 'concept' | 'greeting' }> => {
+      if (isSim) {
+        await new Promise((r) => setTimeout(r, 1200));
+
+        const q = question.toLowerCase().trim();
+        const words = q.split(/\s+/);
+
+        // ── Greeting detection ──
+        if (/^(h+i+|h+e+y+|he+llo+|yo+|sup|what'?s?\s*up|good\s*(morning|evening|afternoon)|howdy|greetings)/i.test(q) && words.length <= 5) {
+          return { answer: `Hey! 👋 I'm your AI learning assistant for **${role}**. Ask me anything — technical concepts, interview questions, career advice, or just chat. What would you like to learn about?`, type: 'greeting' };
+        }
+
+        // ── Acknowledgment / small talk ──
+        if (/^(thanks?|thank\s*you|ok|cool|nice|great|got\s*it|awesome|perfect|yes|no|sure|alright)/i.test(q) && words.length <= 4) {
+          const replies = [
+            "You're welcome! What else would you like to learn?",
+            "Glad that helped! Any other questions?",
+            "Happy to help! What topic should we explore next?",
+            "Anytime! Feel free to ask about any concept or interview topic."
+          ];
+          return { answer: replies[conversationHistory.length % replies.length], type: 'greeting' };
+        }
+
+        // ── Knowledge Question Detection ──
+        // Build comprehensive answer from the question topic
+        const isExplainQ = /^(what\s+is|explain|describe|define|how\s+does|how\s+do|what\s+are|tell\s+me\s+about|teach\s+me|how\s+to|why\s+is|why\s+do|when\s+to|can\s+you\s+explain|walk\s+me\s+through|what's|whats)/i.test(q);
+        const isDifferenceQ = /\b(difference\s+between|vs\.?|versus|compare|compared\s+to)\b/i.test(q);
+        const isHowToQ = /^how\s+(do|can|would|should|to)\b/i.test(q);
+
+        if (isExplainQ || isDifferenceQ || isHowToQ || words.length >= 4) {
+          // ── COMPREHENSIVE ANSWER DATABASE ──
+          const topicAnswers: Record<string, { answer: string; type: 'explanation' | 'concept' }> = {
+            'machine learning': {
+              answer: `## Machine Learning
+
+Machine Learning is a subset of Artificial Intelligence that enables computers to learn patterns from data and make predictions or decisions **without being explicitly programmed** for each scenario.
+
+### Three Primary Types
+
+**1. Supervised Learning**
+The model learns from labeled data (input-output pairs). You show it examples with correct answers, and it learns the mapping.
+- **Classification:** Spam detection, disease diagnosis, sentiment analysis
+- **Regression:** House price prediction, sales forecasting, temperature prediction
+- Algorithms: Linear Regression, Decision Trees, Random Forest, XGBoost, Neural Networks
+
+**2. Unsupervised Learning**
+The model finds hidden patterns in unlabeled data — no correct answers provided.
+- **Clustering:** Customer segmentation, anomaly detection, gene grouping
+- **Dimensionality Reduction:** PCA, t-SNE for data visualization
+- Algorithms: K-Means, DBSCAN, Hierarchical Clustering, Autoencoders
+
+**3. Reinforcement Learning**
+The model learns by interacting with an environment, receiving rewards or penalties for actions.
+- Game playing (AlphaGo, Atari), robotics, autonomous driving, recommendation optimization
+- Algorithms: Q-Learning, Deep Q-Networks (DQN), PPO, SAC
+
+### Real-World Applications
+- 🔍 **Search engines** — Google ranking algorithm
+- 🎬 **Recommendations** — Netflix, Spotify, YouTube
+- 🏥 **Healthcare** — Medical image diagnosis, drug discovery
+- 💰 **Finance** — Fraud detection, algorithmic trading
+- 🚗 **Autonomous vehicles** — Tesla Autopilot, Waymo
+- 🗣️ **NLP** — ChatGPT, translation, voice assistants
+
+### Interview Tip 💡
+When asked "What is ML?" in an interview, start with the definition, give 2-3 types with examples, and end with a real project you've worked on. Interviewers want to see **practical understanding**, not textbook definitions.`,
+              type: 'explanation'
+            },
+            'deep learning': {
+              answer: `## Deep Learning
+
+Deep Learning is a subset of Machine Learning that uses **neural networks with multiple layers** (hence "deep") to learn hierarchical representations of data. Each layer transforms the data into increasingly abstract features.
+
+### How It Works
+
+A neural network consists of:
+- **Input Layer:** Raw data (pixels, text tokens, audio samples)
+- **Hidden Layers:** Each layer applies weighted transformations + activation functions (ReLU, sigmoid). Deeper layers capture more abstract patterns.
+- **Output Layer:** Final prediction (classification probability, regression value)
+
+Training uses **backpropagation** — the algorithm computes the gradient of the loss function with respect to each weight, then updates weights using gradient descent to minimize error.
+
+### Key Architectures
+
+| Architecture | Best For | Example |
+|---|---|---|
+| **CNN** (Convolutional) | Images, spatial data | ResNet, EfficientNet |
+| **RNN/LSTM** | Sequential data, time series | Language models (legacy) |
+| **Transformer** | NLP, vision, multimodal | GPT-4, BERT, ViT |
+| **GAN** | Image generation | StyleGAN, DALL-E (partially) |
+| **Diffusion Models** | Image/video generation | Stable Diffusion, DALL-E 3 |
+| **Autoencoder** | Compression, anomaly detection | VAE, denoising AE |
+
+### When to Use Deep Learning vs Traditional ML
+
+- **Use Deep Learning:** Large datasets (>10K samples), complex patterns (images, text, audio), GPU available
+- **Use Traditional ML:** Small datasets, tabular data, interpretability matters, limited compute
+- **Rule of thumb:** If XGBoost works well on your tabular data, don't force a neural network
+
+### Interview Tip 💡
+Interviewers love when you explain the **trade-offs** — deep learning needs more data and compute, but captures complex patterns that traditional ML cannot. Show that you can choose the right tool for the problem.`,
+              type: 'explanation'
+            },
+            'neural network': {
+              answer: `## Neural Networks
+
+A Neural Network is a computational model inspired by the biological brain, consisting of interconnected nodes (neurons) organized in layers that process information.
+
+### Architecture
+
+\`\`\`
+Input Layer → Hidden Layer 1 → Hidden Layer 2 → ... → Output Layer
+   (features)    (learned representations)         (prediction)
+\`\`\`
+
+**Each neuron computes:** output = activation(Σ(weight_i × input_i) + bias)
+
+### Key Components
+
+**1. Weights & Biases:** Learnable parameters that the network adjusts during training. A simple image classifier might have millions of parameters.
+
+**2. Activation Functions:**
+- **ReLU** (Rectified Linear Unit): f(x) = max(0, x) — most common, prevents vanishing gradients
+- **Sigmoid:** f(x) = 1/(1+e^(-x)) — outputs 0-1, used for binary classification
+- **Softmax:** Converts logits to probabilities for multi-class classification
+- **GELU:** Used in transformers (GPT, BERT)
+
+**3. Loss Functions:**
+- Cross-entropy for classification
+- MSE (Mean Squared Error) for regression
+- Contrastive loss for embeddings
+
+**4. Optimization:**
+- **SGD** (Stochastic Gradient Descent) — simple, effective
+- **Adam** — adaptive learning rates, most popular default
+- **AdamW** — Adam with weight decay, used in modern LLMs
+
+### Training Process
+1. Forward pass: Input flows through network → prediction
+2. Loss computation: Compare prediction vs actual label
+3. Backward pass: Backpropagation computes gradients
+4. Weight update: Optimizer adjusts weights to reduce loss
+5. Repeat for many epochs until convergence
+
+### Common Challenges
+- **Vanishing gradients:** Use ReLU, batch normalization, residual connections
+- **Overfitting:** Dropout, data augmentation, early stopping, regularization
+- **Training instability:** Learning rate scheduling, gradient clipping, warm-up
+
+### Interview Tip 💡
+Be ready to explain backpropagation intuitively: "It's the chain rule applied backwards through the network to compute how much each weight contributed to the error."`,
+              type: 'explanation'
+            },
+            'docker': {
+              answer: `## Docker
+
+Docker is a platform that packages applications and their dependencies into **containers** — lightweight, portable, isolated environments that run consistently across any system.
+
+### Core Concepts
+
+**Container vs Virtual Machine:**
+| Aspect | Container | VM |
+|--------|-----------|-----|
+| Size | MBs (10-100MB) | GBs (1-10GB) |
+| Startup | Seconds | Minutes |
+| Isolation | Process-level | Hardware-level |
+| OS | Shares host kernel | Full guest OS |
+| Performance | Near-native | ~5-10% overhead |
+
+**Key Components:**
+- **Dockerfile:** Recipe for building an image — base image, dependencies, app code, startup command
+- **Image:** Immutable snapshot of your application + environment (like a class)
+- **Container:** Running instance of an image (like an object)
+- **Registry:** Repository for images — Docker Hub, AWS ECR, GCR
+
+### Example Dockerfile
+\`\`\`dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+\`\`\`
+
+### Essential Commands
+\`\`\`bash
+docker build -t myapp:v1 .          # Build image
+docker run -d -p 8000:8000 myapp:v1 # Run container
+docker ps                            # List running containers
+docker logs <container_id>           # View logs
+docker exec -it <id> /bin/bash       # Enter container shell
+docker-compose up -d                 # Start multi-container app
+\`\`\`
+
+### Docker Compose (Multi-Container Apps)
+\`\`\`yaml
+services:
+  web:
+    build: .
+    ports: ["8000:8000"]
+    depends_on: [db, redis]
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: secret
+  redis:
+    image: redis:7-alpine
+\`\`\`
+
+### Why Docker Matters
+- **"It works on my machine"** → Works everywhere with Docker
+- **CI/CD:** Build once, deploy anywhere (dev, staging, prod)
+- **Microservices:** Each service in its own container
+- **Scaling:** Orchestrate with Kubernetes for auto-scaling
+
+### Interview Tip 💡
+Interviewers expect you to know Docker basics AND orchestration. Mention that you use Docker for local development AND production, and that you've worked with Docker Compose for multi-service apps.`,
+              type: 'explanation'
+            },
+            'kubernetes': {
+              answer: `## Kubernetes (K8s)
+
+Kubernetes is an open-source container orchestration platform that automates deployment, scaling, and management of containerized applications.
+
+### Why Kubernetes?
+Docker runs containers on a single machine. Kubernetes manages containers across **a cluster of machines**, handling:
+- Automatic scaling (up/down based on load)
+- Self-healing (restarts failed containers)
+- Load balancing (distributes traffic)
+- Rolling updates (zero-downtime deployments)
+- Service discovery (containers find each other)
+
+### Core Architecture
+
+**Control Plane (Master):**
+- **API Server:** Frontend for K8s — all commands go through here
+- **etcd:** Key-value store holding cluster state
+- **Scheduler:** Assigns pods to nodes based on resources
+- **Controller Manager:** Ensures desired state matches actual state
+
+**Worker Nodes:**
+- **kubelet:** Agent ensuring containers run as expected
+- **kube-proxy:** Handles networking and load balancing
+- **Container Runtime:** Docker or containerd
+
+### Key Resources
+
+| Resource | Purpose | Example |
+|----------|---------|---------|
+| **Pod** | Smallest deployable unit (1+ containers) | Your app container |
+| **Deployment** | Manages pod replicas + rolling updates | Web server with 3 replicas |
+| **Service** | Stable network endpoint for pods | LoadBalancer, ClusterIP |
+| **ConfigMap/Secret** | Configuration and sensitive data | DB passwords, API keys |
+| **Ingress** | HTTP routing + SSL termination | Route /api to backend |
+| **HPA** | Auto-scaling based on metrics | Scale on CPU > 70% |
+
+### Essential Commands
+\`\`\`bash
+kubectl get pods                  # List pods
+kubectl apply -f deployment.yaml  # Apply config
+kubectl scale deploy/app --replicas=5  # Scale
+kubectl logs pod/app-xyz          # View logs
+kubectl exec -it pod/app -- bash  # Enter pod
+kubectl rollout undo deploy/app   # Rollback
+\`\`\`
+
+### Interview Tip 💡
+Know the difference between Deployments (stateless) and StatefulSets (stateful), understand Ingress vs Service, and be able to explain how a rolling update works without downtime.`,
+              type: 'explanation'
+            },
+            'api': {
+              answer: `## REST API Design
+
+An API (Application Programming Interface) is a contract that allows software components to communicate. REST (Representational State Transfer) is the most common API architectural style.
+
+### REST Principles
+1. **Client-Server:** Frontend and backend are decoupled
+2. **Stateless:** Each request contains all needed information
+3. **Uniform Interface:** Standard HTTP methods for predictable behavior
+4. **Resource-Based:** URLs represent resources (nouns, not verbs)
+
+### HTTP Methods
+
+| Method | Purpose | Example | Idempotent? |
+|--------|---------|---------|-------------|
+| GET | Read | GET /users/123 | ✅ |
+| POST | Create | POST /users | ❌ |
+| PUT | Replace | PUT /users/123 | ✅ |
+| PATCH | Partial update | PATCH /users/123 | ✅ |
+| DELETE | Remove | DELETE /users/123 | ✅ |
+
+### Status Codes
+- **2xx Success:** 200 OK, 201 Created, 204 No Content
+- **3xx Redirect:** 301 Moved Permanently, 304 Not Modified
+- **4xx Client Error:** 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 429 Too Many Requests
+- **5xx Server Error:** 500 Internal Server Error, 502 Bad Gateway, 503 Service Unavailable
+
+### Best Practices
+- Use plural nouns: \`/users\`, not \`/user\`
+- Nest related resources: \`/users/123/orders\`
+- Version your API: \`/api/v1/users\`
+- Use pagination: \`?page=1&limit=20\`
+- Return consistent error format: \`{ "error": { "code": "NOT_FOUND", "message": "..." } }\`
+- Rate limiting with 429 status and Retry-After header
+
+### REST vs GraphQL vs gRPC
+
+| Feature | REST | GraphQL | gRPC |
+|---------|------|---------|------|
+| Protocol | HTTP/JSON | HTTP/JSON | HTTP/2 + Protobuf |
+| Best for | CRUD APIs | Flexible queries | Microservice comms |
+| Over/Under fetching | Common | Solved | N/A |
+| Performance | Good | Good | Excellent |
+
+### Interview Tip 💡
+Be ready to design an API on the spot. Practice: "Design the API for a Twitter-like service" — define endpoints, request/response formats, pagination, and authentication.`,
+              type: 'explanation'
+            },
+            'overfitting': {
+              answer: `## Overfitting
+
+Overfitting occurs when a machine learning model learns the **training data too well**, including its noise and outliers, resulting in excellent training performance but poor generalization to new, unseen data.
+
+### How to Detect It
+
+| Metric | Overfitting | Good Fit |
+|--------|-------------|----------|
+| Training accuracy | 99% | 92% |
+| Validation accuracy | 70% | 89% |
+| Training loss | Very low | Low |
+| Validation loss | Increases after some epochs | Decreases and stabilizes |
+
+**Visual indicator:** If your training loss keeps decreasing but validation loss starts increasing — that's overfitting.
+
+### Causes
+1. **Model too complex** for the data (too many parameters)
+2. **Insufficient training data** — model memorizes instead of learning
+3. **Training too long** — model starts memorizing noise
+4. **No regularization** applied
+5. **Data leakage** — test data information leaks into training
+
+### Solutions
+
+**1. More Data:** The best cure. Data augmentation (for images: flip, rotate, crop) can help when collection is expensive.
+
+**2. Regularization:**
+- L1 (Lasso) — pushes weights to zero → feature selection
+- L2 (Ridge) — shrinks all weights → prevents large weights
+- Elastic Net — combines both
+
+**3. Dropout:** Randomly disable neurons during training (typically 20-50%). Forces the network to learn redundant representations.
+
+**4. Early Stopping:** Monitor validation loss; stop training when it starts increasing. Save the best model checkpoint.
+
+**5. Cross-Validation:** K-fold CV gives a more reliable estimate of generalization performance.
+
+**6. Simpler Model:** Reduce layers, neurons, or tree depth. Use Occam's razor — prefer the simplest model that works.
+
+**7. Batch Normalization:** Normalizes layer inputs, acts as mild regularization.
+
+### Underfitting vs Overfitting
+- **Underfitting:** Model too simple → high bias, poor on both training and test
+- **Overfitting:** Model too complex → high variance, great on training, poor on test
+- **Sweet spot:** Balance between bias and variance
+
+### Interview Tip 💡
+Always discuss the **bias-variance tradeoff** when talking about overfitting. Show that you monitor learning curves and use early stopping + regularization as standard practice.`,
+              type: 'concept'
+            },
+            'git': {
+              answer: `## Git — Version Control System
+
+Git is a distributed version control system that tracks changes to files, enabling collaboration, branching, merging, and version history for software projects.
+
+### Core Concepts
+
+**Repository:** A project folder tracked by Git. Contains all files and their complete history.
+
+**Three Areas:**
+\`\`\`
+Working Directory → Staging Area → Repository
+  (your files)     (git add)      (git commit)
+\`\`\`
+
+### Essential Commands
+
+\`\`\`bash
+# Setup
+git init                         # Initialize new repo
+git clone <url>                  # Clone remote repo
+
+# Daily workflow
+git status                       # Check current state
+git add .                        # Stage all changes
+git commit -m "feat: add login"  # Commit with message
+git push origin main             # Push to remote
+git pull origin main             # Pull latest changes
+
+# Branching
+git branch feature/login         # Create branch
+git checkout feature/login       # Switch to branch
+git checkout -b feature/login    # Create + switch (shortcut)
+git merge feature/login          # Merge branch into current
+git branch -d feature/login      # Delete merged branch
+
+# Inspection
+git log --oneline -10            # Last 10 commits
+git diff                         # See unstaged changes
+git blame <file>                 # Who changed each line
+git stash                        # Save changes temporarily
+\`\`\`
+
+### Branching Strategy (Git Flow)
+- **main:** Production-ready code only
+- **develop:** Integration branch for features
+- **feature/*:** Individual feature branches
+- **hotfix/*:** Emergency production fixes
+- **release/*:** Pre-production staging
+
+### Commit Message Convention
+\`\`\`
+feat: add user authentication
+fix: resolve login redirect bug
+refactor: simplify database queries
+docs: update API documentation
+test: add unit tests for auth module
+chore: update dependencies
+\`\`\`
+
+### Interview Tip 💡
+Know how to resolve merge conflicts, explain the difference between \`merge\` and \`rebase\`, and describe your team's branching strategy. Interviewers often ask: "How do you handle a situation where your feature branch has conflicts with main?"`,
+              type: 'explanation'
+            },
+            'sql': {
+              answer: `## SQL — Structured Query Language
+
+SQL is the standard language for managing and querying relational databases. It's essential for any role that works with data.
+
+### Core Operations (CRUD)
+
+\`\`\`sql
+-- CREATE
+INSERT INTO users (name, email, role)
+VALUES ('Poovarasan', 'poovarasan@email.com', 'AI Engineer');
+
+-- READ
+SELECT name, email FROM users WHERE role = 'AI Engineer';
+
+-- UPDATE
+UPDATE users SET role = 'Senior AI Engineer' WHERE id = 1;
+
+-- DELETE
+DELETE FROM users WHERE id = 1;
+\`\`\`
+
+### JOINs (Most Asked in Interviews)
+
+\`\`\`sql
+-- INNER JOIN: Only matching rows from both tables
+SELECT u.name, o.total
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id;
+
+-- LEFT JOIN: All users, even without orders (NULLs)
+SELECT u.name, o.total
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id;
+
+-- Self-join: Employees with their managers
+SELECT e.name AS employee, m.name AS manager
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.id;
+\`\`\`
+
+### Aggregations
+
+\`\`\`sql
+-- Group by with aggregates
+SELECT department, COUNT(*) AS headcount, AVG(salary) AS avg_salary
+FROM employees
+GROUP BY department
+HAVING AVG(salary) > 100000
+ORDER BY avg_salary DESC;
+
+-- Window functions (advanced)
+SELECT name, salary,
+       RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS rank
+FROM employees;
+\`\`\`
+
+### Performance
+
+\`\`\`sql
+-- Create index for faster queries
+CREATE INDEX idx_users_email ON users(email);
+
+-- EXPLAIN to analyze query performance
+EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'test@email.com';
+\`\`\`
+
+### Interview Tip 💡
+Practice window functions (RANK, ROW_NUMBER, LAG, LEAD), CTEs (WITH clause), and writing complex JOINs. SQL interviews often include: "Find the second highest salary per department."`,
+              type: 'explanation'
+            },
+            'system design': {
+              answer: `## System Design — Interview Framework
+
+System design interviews test your ability to design large-scale distributed systems. Here's my framework:
+
+### Step-by-Step Approach
+
+**1. Clarify Requirements (5 min)**
+- Functional: What features? (e.g., "Users can post, follow, and see a feed")
+- Non-Functional: Scale, latency, availability targets
+- Constraints: Read-heavy vs write-heavy? Global vs regional?
+
+**2. Back-of-Envelope Estimation (3 min)**
+- Daily Active Users (DAU)
+- Read/Write ratio
+- Storage needs (per record × total records × retention)
+- Bandwidth and throughput (QPS = queries per second)
+
+**3. High-Level Design (10 min)**
+- Draw main components: Clients → Load Balancer → API Servers → Database
+- Identify data flow for key operations
+- Choose between monolith vs microservices
+
+**4. Deep Dive (15 min)**
+- **Database Design:** SQL vs NoSQL, schema, partitioning, replication
+- **Caching:** What to cache, invalidation strategy, Redis/Memcached
+- **API Design:** Key endpoints, request/response format
+- **Scaling:** Horizontal scaling, CDN, message queues
+- **Search:** Elasticsearch for text search, Redis for real-time
+
+**5. Bottlenecks & Trade-offs (5 min)**
+- Single points of failure → redundancy
+- Hot spots → consistent hashing
+- Consistency vs availability → CAP theorem choice
+- Cost optimization
+
+### Common Designs to Practice
+- URL Shortener (bit.ly)
+- Twitter/Instagram Feed
+- Chat System (WhatsApp)
+- Video Streaming (YouTube)
+- Ride Sharing (Uber)
+- Rate Limiter
+- Notification System
+
+### Interview Tip 💡
+Always start with requirements and estimation before jumping into design. Interviewers want to see your **thought process**, not a perfect architecture. Talk through trade-offs explicitly.`,
+              type: 'explanation'
+            },
+            'cicd': {
+              answer: `## CI/CD — Continuous Integration & Continuous Deployment
+
+CI/CD is a set of practices that automate the building, testing, and deployment of code changes, enabling teams to ship software faster and more reliably.
+
+### Continuous Integration (CI)
+Every code commit triggers an automated pipeline:
+1. **Build** — Compile code, install dependencies
+2. **Lint** — Check code style (ESLint, Pylint)
+3. **Unit Tests** — Run fast tests (~seconds)
+4. **Integration Tests** — Test component interactions (~minutes)
+5. **Security Scan** — Dependency vulnerability check (Snyk, Dependabot)
+
+### Continuous Deployment (CD)
+After CI passes, automatically deploy to environments:
+1. **Staging** — Deploy to staging environment
+2. **Smoke Tests** — Quick health checks on staging
+3. **Production** — Deploy to prod (blue-green, canary, or rolling)
+4. **Post-Deploy** — Run production smoke tests, monitor errors
+
+### Example GitHub Actions Pipeline
+\`\`\`yaml
+name: CI/CD Pipeline
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploy to production"
+\`\`\`
+
+### Popular CI/CD Tools
+- **GitHub Actions** — Built into GitHub, YAML-based
+- **GitLab CI** — Built into GitLab
+- **Jenkins** — Self-hosted, highly customizable
+- **CircleCI** — Cloud-based, fast
+- **ArgoCD** — GitOps for Kubernetes deployments
+
+### Interview Tip 💡
+Describe your team's actual CI/CD pipeline, including how you handle rollbacks and what monitoring you have post-deployment.`,
+              type: 'explanation'
+            },
+          };
+
+          // ── Search for matching topic in the database ──
+          for (const [topic, data] of Object.entries(topicAnswers)) {
+            if (q.includes(topic)) {
+              return data;
+            }
+          }
+
+          // ── Smart fallback for unknown topics ──
+          const cleanTopic = q
+            .replace(/^(what\s+is\s+(a\s+|an\s+|the\s+)?|explain\s+(the\s+|a\s+|an\s+)?|describe\s+|define\s+|how\s+does\s+(a\s+|an\s+|the\s+)?|tell\s+me\s+about\s+(the\s+|a\s+|an\s+)?|teach\s+me\s+about\s+|how\s+to\s+)/i, '')
+            .replace(/[?.!]/g, '')
+            .trim();
+
+          const capitalizedTopic = cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1);
+
+          return {
+            answer: `## ${capitalizedTopic}
+
+Here's a comprehensive overview of **${cleanTopic}** as it applies to the **${role}** field:
+
+### Definition
+${capitalizedTopic} is a key concept in ${role} work that encompasses the methodologies, tools, and best practices used to address specific challenges in this domain. Understanding it deeply is essential for both day-to-day work and career growth.
+
+### Core Concepts
+1. **Fundamentals:** The foundational principles that govern how ${cleanTopic} works in practice
+2. **Implementation:** How to apply ${cleanTopic} in real projects — from planning to execution
+3. **Best Practices:** Industry-standard approaches that experienced ${role}s follow
+4. **Tools & Frameworks:** Common tools used for ${cleanTopic} in production environments
+
+### Why It Matters for ${role}s
+- Directly impacts the quality and reliability of your work
+- Frequently asked in technical interviews for this role
+- Demonstrates depth of understanding to senior engineers and hiring managers
+- Enables better collaboration with cross-functional teams
+
+### How to Learn More
+1. Build a small project implementing ${cleanTopic}
+2. Read documentation and official guides
+3. Practice explaining it to others (teaching reinforces learning)
+4. Study how industry leaders apply it at scale
+
+### Interview Tip 💡
+When asked about ${cleanTopic} in an interview, structure your answer as: **Definition → How It Works → When To Use It → Trade-offs → Your Experience**. This shows both theoretical knowledge and practical application.
+
+*Want me to go deeper into any specific aspect of ${cleanTopic}? Just ask!*`,
+            type: 'concept'
+          };
+        }
+
+        // ── Fallback for very short or ambiguous input ──
+        return {
+          answer: `I'd be happy to help! I can:\n\n• **Explain concepts** — "What is machine learning?", "Explain Docker"\n• **Teach topics** — "Teach me about system design", "How does Kubernetes work?"\n• **Interview prep** — "Give me interview questions for ${role}"\n• **Compare technologies** — "Difference between SQL and NoSQL"\n\nWhat would you like to learn about?`,
+          type: 'greeting'
+        };
+      }
+
+      // ── Live Gemini API ──
+      const prompt = `You are an elite AI Tutor and Technical Mentor specializing in ${role} (${level} level).
+
+ROLE: You are a hybrid of ChatGPT, a senior ${role}, and an interview coach. You must provide COMPLETE, REAL answers — never placeholder text.
+
+BEHAVIOR RULES:
+1. When asked a knowledge question (e.g., "What is ML?"), provide a FULL, detailed explanation with:
+   - Clear definition
+   - Core concepts with examples
+   - Types/categories if applicable
+   - Real-world applications
+   - Code examples where relevant
+   - An "Interview Tip" at the end
+
+2. When asked to compare (e.g., "X vs Y"), provide a structured comparison with a table.
+
+3. When asked "How to" questions, provide step-by-step guides with practical details.
+
+4. Use markdown formatting: headers (##), bold, code blocks, tables, bullet points.
+
+5. Adapt depth to ${level} level — more foundational for Fresher/Intern, more advanced for Senior/Lead.
+
+6. Be conversational and warm, like a knowledgeable mentor.
+
+7. NEVER give empty structures like "[Definition]" or "Your answer should include..." — ALWAYS provide the actual content.
+
+CONVERSATION HISTORY:
+${JSON.stringify(conversationHistory.slice(-6))}
+
+USER'S QUESTION:
+"${question}"
+
+Return JSON:
+{
+  "answer": "markdown-formatted comprehensive response",
+  "type": "explanation" | "interview_tip" | "concept" | "greeting"
+}`;
+
+      const responseText = await runGemini(prompt);
+      return JSON.parse(responseText);
     }
   };
 };

@@ -117,8 +117,8 @@ export const Navbar: React.FC = () => {
               <User className="h-4 w-4 text-brand-cyan" />
             </div>
             <div className="hidden lg:block text-left">
-              <div className="text-xs font-semibold text-white">{userProfile.name}</div>
-              <div className="text-[10px] text-brand-silver font-medium">{userProfile.title}</div>
+              <div className="text-xs font-semibold text-white">Poovarasan M</div>
+              <div className="text-[10px] text-brand-silver font-medium">AI Automation Developer</div>
             </div>
           </div>
 

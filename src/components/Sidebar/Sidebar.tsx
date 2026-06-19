@@ -1,16 +1,16 @@
 // e:/AI Talent OS/src/components/Sidebar/Sidebar.tsx
 import React from 'react';
 import { useStore } from '../../store/useStore';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Briefcase, 
-  Video, 
-  Sparkles, 
-  MessageSquare, 
-  GraduationCap, 
-  Users, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  FileText,
+  Briefcase,
+  Video,
+  Sparkles,
+  MessageSquare,
+  GraduationCap,
+  Users,
+  BarChart3,
   Terminal,
   Activity
 } from 'lucide-react';
@@ -80,11 +80,10 @@ export const Sidebar: React.FC = () => {
               <button
                 key={link.id}
                 onClick={() => handlePageClick(link.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
-                  isActive 
-                    ? 'bg-brand-indigo/20 border border-brand-indigo/40 text-white shadow-[0_0_15px_-3px_rgba(63,78,255,0.4)]' 
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${isActive
+                    ? 'bg-brand-indigo/20 border border-brand-indigo/40 text-white shadow-[0_0_15px_-3px_rgba(63,78,255,0.4)]'
                     : 'text-brand-silver hover:text-white hover:bg-white/5 border border-transparent'
-                }`}
+                  }`}
               >
                 <Icon className={`h-4 w-4 ${isActive ? 'text-brand-cyan' : ''}`} />
                 <span>{link.label}</span>
@@ -98,7 +97,7 @@ export const Sidebar: React.FC = () => {
       <div className="p-4 border-t border-brand-border text-center">
         <div className="flex items-center justify-center gap-2 text-[10px] text-brand-silver font-mono">
           <Activity className="h-3 w-3 text-brand-cyan animate-pulse" />
-          <span>Antigravity Engine v1.0.4</span>
+          <span>AI Talent OS v1.0.4</span>
         </div>
       </div>
     </aside>
